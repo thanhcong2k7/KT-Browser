@@ -1,4 +1,7 @@
 (function ($) {
+    const settings = require('electron-settings');
+    const remote = require('@electron/remote');
+    const { globalShortcut } = remote;
     $.fn.browser = function (params) {
         var settings = $.extend({
                 url: "",
@@ -27,6 +30,13 @@
             t.bar = bar.bar({
                 tab: settings.tab
             })
+            
+            // RE-CALL LAYOUT: Now that t.bar is initialized, let webview fix layout
+            // The fitToParent function is attached to the returned jQuery object in webview.js
+            // Since t.webview is that object, we can call it.
+            if (t.webview.fitToParent) {
+                t.webview.fitToParent();
+            }
 
             if (getSettings("settings.colorByPage", true)) {
                 t.colors = new Colors(t.webview.webview)
@@ -80,13 +90,13 @@
 
 
         globalShortcut.register('F10', () => {
-            menu.show();
+            t.menu.show();
         });
         globalShortcut.register('Alt+F', () => {
-            menu.show();
+            t.menu.show();
         });
         globalShortcut.register('Alt+E', () => {
-            menu.show();
+            t.menu.show();
         });
         return this
     }

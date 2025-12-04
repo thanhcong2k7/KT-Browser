@@ -1,4 +1,6 @@
 (function($) {
+    const remote = require('@electron/remote');
+    const settings = require('electron-settings');
     $.fn.menu = function(params) {
         var settings = $.extend({
                 tab: null
@@ -14,7 +16,9 @@
         t.newWindow = $('<li class="menu-item ripple">').appendTo(t.menuItems)
         t.private = $('<li class="menu-item ripple">').appendTo(t.menuItems)
         $('<li class="menu-spec">').appendTo(t.menuItems)
-        if (process.platform == 'win32') {
+        
+        // Only initialized on Windows
+        if (remote.process.platform == 'win32') {
             t.fullscreen = $('<li class="menu-item ripple">').appendTo(t.menuItems)
             t.fullscreen.append('<i class="material-icons">fullscreen</i>')
             t.fullscreen.append('<p class="menu-text">Fullscreen</p>')
@@ -99,15 +103,19 @@
             }
             settings.tab.instance.webview.updateURLBarIcon()
         });
-        t.fullscreen.click(function(e) {
-            settings.tab.instance.webview.webview.executeJavaScript('isfullscreen()', true, function(result) {
-                if (result == true) {
-                    settings.tab.instance.webview.webview.executeJavaScript('setfullscreen(false)', false);
-                } else {
-                    settings.tab.instance.webview.webview.executeJavaScript('setfullscreen(true)', false);
-                }
-            })
-        });
+        
+        // FIX: Check if t.fullscreen exists before attaching event listener
+        if (t.fullscreen) {
+            t.fullscreen.click(function(e) {
+                settings.tab.instance.webview.webview.executeJavaScript('isfullscreen()', true, function(result) {
+                    if (result == true) {
+                        settings.tab.instance.webview.webview.executeJavaScript('setfullscreen(false)', false);
+                    } else {
+                        settings.tab.instance.webview.webview.executeJavaScript('setfullscreen(true)', false);
+                    }
+                })
+            });
+        }
 
         t.nightmode.click(function(e) {
             settings.tab.instance.webview.webview.executeJavaScript('isNightMode()', true, function(result) {

@@ -19,7 +19,7 @@
   "license": "MIT",
   "devDependencies": {
     "asar": "latest",
-    "electron": "latest",
+    "electron": "^33.0.0",
     "electron-connect": "latest",
     "electron-is-dev": "latest",
     "electron-settings": "latest",
@@ -31,13 +31,15 @@
     "node-dir": "latest"
   },
   "dependencies": {
+    "@electron/remote": "^2.1.2",
+    "electron-settings": "^4.0.0", 
+    "jquery": "^3.1.0",
     "abp-filter-parser": "latest",
     "asar": "latest",
     "electron": "latest",
     "electron-connect": "latest",
     "electron-is-dev": "latest",
     "electron-packager": "latest",
-    "electron-settings": "latest",
     "electron-window-state": "latest",
     "get-pixels": "latest",
     "google-tts-api": "latest",

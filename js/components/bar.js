@@ -1,10 +1,19 @@
 (function($) {
+    const remote = require('@electron/remote'); // Ensure available
+
     $.fn.bar = function(params) {
         var settings = $.extend({
                 tab: null
             }, params),
-            t = this,
-            webview = settings.tab.instance.webview.webview,
+            t = this
+            
+        // Check if settings.tab and instance exist
+        if (!settings.tab || !settings.tab.instance) {
+             console.error("Bar initialized without tab instance");
+             return this;
+        }
+
+        var webview = settings.tab.instance.webview.webview,
             menu = settings.tab.instance.menu
 
         $(settings.tab).on('ready', function() {
@@ -70,13 +79,17 @@
             }
         });
         this.micBtn.click(function() {
-            recognizer.start();
+            if (typeof recognizer !== 'undefined') {
+                recognizer.start();
+            }
         });
         this.rdBtn.click(function() {
             const protocol = require('url').parse(webview.getURL()).protocol
             if(protocol === 'http:' || protocol === 'https:') {
-                webview.executeJavaScript("document.querySelector('article')", true, function(result) {
-                    webview.executeJavaScript('getReaderScore()', true, function(tl) {
+                webview.executeJavaScript("document.querySelector('article')", true)
+                .then(result => {
+                    webview.executeJavaScript('getReaderScore()', true)
+                    .then(tl => {
                         tl = Math.abs(tl)
                         if(tl > 650 || (result && tl > 200)) {
                             webview.loadURL(`file://${__dirname}/reader/index.html?url=` + webview.getURL())
