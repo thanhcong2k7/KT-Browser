@@ -40,6 +40,7 @@
 
             if (getSettings("settings.colorByPage", true)) {
                 t.colors = new Colors(t.webview.webview)
+                /*
                 setInterval(function () {
                     if (settings.tab.selected) {
                         t.colors.getColor(function (data) {
@@ -52,7 +53,7 @@
                             }
                         })
                     }
-                }, 200)
+                }, 200)*/
             }
 
             function changeForeground(color, ripple) {

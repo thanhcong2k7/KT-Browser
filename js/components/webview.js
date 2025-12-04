@@ -292,6 +292,28 @@
                     t.webview.executeJavaScript('MacRender()', false);
                 }
             }).catch(() => { });
+
+            if(isMainFrame && getSettings("settings.colorByPage", true)) {
+                var colors = new Colors(t.webview);
+                colors.getColor(function (data) {
+                    if (settings.tab.Color != data.background) {
+                        settings.tab.Color = data.background;
+                        if (settings.tab.selected) {
+                        // This part is complex because it modifies the main window.
+                        // You might need to use IPC to send the color to the main renderer process.
+                        // For now, let's assume the logic inside browser.js can be triggered from here.
+                        remote.getCurrentWindow().webContents.executeJavaScript(`
+                            var tab = tabCollection.find(t => t.selected);
+                            if (tab) {
+                                tab.Color = "${data.background}";
+                                setColor("${data.background}");
+                                updateColor();
+                            }
+                        `);
+                        }
+                    }
+                });
+            }
         });
 
         t.webview.addEventListener('did-fail-load', function (e) {

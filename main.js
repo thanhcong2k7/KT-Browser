@@ -205,19 +205,16 @@ protocol.registerSchemesAsPrivileged([
 
 app.on('ready', function() {
     protocol.registerFileProtocol('kt-browser', (request, callback) => {
-        var url = request.url.substr(13)
-        var lastChar = url.substr(url.length - 1)
+        var url = request.url.substring(13)
+        var lastChar = url.slice(-1)
         var s = url.split("/");
-        if(lastChar != "/") {
+        if(lastChar !== "/") {
             url = url.replace(s[0], "")
         }
-        if(lastChar == "/") {
-            url = url.substring(0, url.length - 1)
-            url += ".html"
+        if (lastChar === "/") {
+            url = url.slice(0, -1) + ".html";
         }
-        callback({
-            path: path.normalize(`${__dirname}/${url}`)
-        })
+        return new Response(path.normalize(`${__dirname}/${url}`));
     }, (error) => {
         if (error) console.error('Failed to register protocol');
     })
