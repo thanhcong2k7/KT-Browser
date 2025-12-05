@@ -78,7 +78,17 @@
             const BrowserWindow = remote.BrowserWindow;
 
             var mainWindow = new BrowserWindow({
-                frame: false
+                title: 'Settings',
+                frame: false,
+                width: 600,
+                height: 750,
+                show: false,
+                // ADD THIS BLOCK TO ALL POPUP WINDOWS:
+                webPreferences: {
+                    nodeIntegration: true,
+                    contextIsolation: false,
+                    enableRemoteModule: true // Required since you use remote inside settings.html
+                }
             })
             mainWindow.loadURL(`file://${__dirname}/index.html`)
 
@@ -107,26 +117,31 @@
         // FIX: Check if t.fullscreen exists before attaching event listener
         if (t.fullscreen) {
             t.fullscreen.click(function(e) {
-                settings.tab.instance.webview.webview.executeJavaScript('isfullscreen()', true, function(result) {
+                // executeJavaScript returns a Promise. 
+                // We pass 'true' for userGesture, though modern Electron often ignores it.
+                settings.tab.instance.webview.webview.executeJavaScript('isfullscreen()', true)
+                .then(result => {
                     if (result == true) {
-                        settings.tab.instance.webview.webview.executeJavaScript('setfullscreen(false)', false);
+                        // No callback needed for setters if we don't care about the result
+                        settings.tab.instance.webview.webview.executeJavaScript('setfullscreen(false)');
                     } else {
-                        settings.tab.instance.webview.webview.executeJavaScript('setfullscreen(true)', false);
+                        settings.tab.instance.webview.webview.executeJavaScript('setfullscreen(true)');
                     }
-                })
+                }).catch(err => console.log("Fullscreen toggle error:", err));
             });
         }
 
         t.nightmode.click(function(e) {
-            settings.tab.instance.webview.webview.executeJavaScript('isNightMode()', true, function(result) {
+            settings.tab.instance.webview.webview.executeJavaScript('isNightMode()', true)
+            .then(result => {
                 if (result == true) {
-                    settings.tab.instance.webview.webview.executeJavaScript('setNightMode(false)', false);
+                    settings.tab.instance.webview.webview.executeJavaScript('setNightMode(false)');
                     settings.tab.instance.webview.webview.reload();
                 } else {
-                    settings.tab.instance.webview.webview.executeJavaScript('setNightMode(true)', false);
-                    settings.tab.instance.webview.webview.executeJavaScript('NightMode()', false);
+                    settings.tab.instance.webview.webview.executeJavaScript('setNightMode(true)');
+                    settings.tab.instance.webview.webview.executeJavaScript('NightMode()');
                 }
-            })
+            }).catch(err => console.log("Night mode toggle error:", err));
         });
 
         t.info.click(function(e) {
@@ -134,7 +149,16 @@
 
             var mainWindow = new BrowserWindow({
                 title: 'KT Browser',
-                frame: false
+                frame: false,
+                width: 600,
+                height: 750,
+                show: false,
+                // ADD THIS BLOCK TO ALL POPUP WINDOWS:
+                webPreferences: {
+                    nodeIntegration: true,
+                    contextIsolation: false,
+                    enableRemoteModule: true // Required since you use remote inside settings.html
+                }
             })
             mainWindow.loadURL(`file://${__dirname}/about.html`)
         });
@@ -151,8 +175,23 @@
 
             var mainWindow = new BrowserWindow({
                 title: 'Downloads',
-                frame: false
+                frame: false,
+                width: 600,
+                height: 750,
+                show: false,
+                // ADD THIS BLOCK TO ALL POPUP WINDOWS:
+                webPreferences: {
+                    nodeIntegration: true,
+                    contextIsolation: false,
+                    enableRemoteModule: true // Required since you use remote inside settings.html
+                }
             })
+            mainWindow.once('ready-to-show', () => {
+                mainWindow.show();
+            });
+            mainWindow.on('closed', () => {
+                mainWindow = null;
+            });
             mainWindow.loadURL(`file://${__dirname}/downloads.html`)
 
         });
@@ -164,7 +203,13 @@
                 frame: false,
                 width: 600,
                 height: 750,
-                show: false
+                show: false,
+                // ADD THIS BLOCK TO ALL POPUP WINDOWS:
+                webPreferences: {
+                    nodeIntegration: true,
+                    contextIsolation: false,
+                    enableRemoteModule: true // Required since you use remote inside settings.html
+                }
             })
 
             mainWindow.once('ready-to-show', () => {
@@ -183,18 +228,25 @@
             });
         });
         t.vpn.click(function(e) {
-            if (getVPN()) {
-                setVPN(false)
+            // Toggle the value
+            var newState = !getVPN(); 
+            setVPN(newState);
+            
+            // Apply the proxy change immediately
+            if (typeof window.updateProxySettings === 'function') {
+                window.updateProxySettings();
+            }
+
+            if (newState) {
                 Toast_Material({
-                    content: "VPN is now disabled",
+                    content: "VPN is now enabled. Current location is " + getVPNLocation(),
                     updown: "bottom",
                     position: "center",
                     align: "center"
                 });
             } else {
-                setVPN(true)
                 Toast_Material({
-                    content: "VPN is now enabled. Current location is " + getVPNLocation(),
+                    content: "VPN is now disabled",
                     updown: "bottom",
                     position: "center",
                     align: "center"

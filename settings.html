@@ -60,17 +60,17 @@
             src: url('fonts/Roboto-Light.ttf');
         }
 
-         ::-webkit-scrollbar {
+        ::-webkit-scrollbar {
             width: 9px;
             background-color: #f1f1f1;
         }
 
         body::-webkit-scrollbar {
-            width: 10px!important;
+            width: 10px !important;
             background-color: #EEEEEE;
         }
 
-         ::-webkit-scrollbar-track {
+        ::-webkit-scrollbar-track {
             border: 9px;
         }
 
@@ -79,18 +79,18 @@
             border: none;
         }
 
-         ::-webkit-scrollbar-thumb {
-            background-color: #424242!important;
-            border-radius: 0px!important;
+        ::-webkit-scrollbar-thumb {
+            background-color: #424242 !important;
+            border-radius: 0px !important;
             border: none;
         }
 
-         ::-webkit-scrollbar-thumb:hover {
-            background-color: #333!important;
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: #333 !important;
         }
 
-         ::-webkit-scrollbar-thumb:active {
-            background-color: #616161!important;
+        ::-webkit-scrollbar-thumb:active {
+            background-color: #616161 !important;
         }
 
         .mdl-selectfield {
@@ -266,6 +266,7 @@
         .mdl-selectfield__placeholder>i {
             outline: 0
         }
+
         /*# sourceMappingURL=mdl-selectfield.min.css.map */
     </style>
 </head>
@@ -276,9 +277,12 @@
             <div class="draggable">
                 <label style="float: left; color: #424242; margin-top: 3px; margin-left: 20px;">Settings</label>
             </div>
-            <div data-tooltip-text="Close" data-tooltip-position="bottom" class="ripple windowbutton windowbutton-close"></div>
-            <div data-tooltip-text="Maximize" data-tooltip-position="bottom" class="windowbutton windowbutton-maximize"></div>
-            <div data-tooltip-text="Minimize" data-tooltip-position="bottom" class="windowbutton windowbutton-minimize"></div>
+            <div data-tooltip-text="Close" data-tooltip-position="bottom"
+                class="ripple windowbutton windowbutton-close"></div>
+            <div data-tooltip-text="Maximize" data-tooltip-position="bottom" class="windowbutton windowbutton-maximize">
+            </div>
+            <div data-tooltip-text="Minimize" data-tooltip-position="bottom" class="windowbutton windowbutton-minimize">
+            </div>
             <div class="border5"></div>
         </div>
         </script>
@@ -290,12 +294,14 @@
                     <input class="mdl-textfield__input" type="text" style="cursor: text;" id="homePage" value="">
                 </div>
                 <h4 style="margin-top: 0px; margin-bottom: 0px;"></h4>
-                <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" onclick='homePage.value = "kt-browser://newtab"'>
+                <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"
+                    onclick='homePage.value = "kt-browser://newtab"'>
                     Default Start Page
-                 </button>
-                 <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" onclick='homePage.value = ""'>
+                </button>
+                <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"
+                    onclick='homePage.value = ""'>
                     Blank Page
-                 </button>
+                </button>
             </div>
             <div class="pad">
                 <h5>Search Engines</h5>
@@ -307,7 +313,7 @@
                         <option value="3">DuckDuckGo</option>
                         <option value="4">Bing</option>
                         <option value="5">Yahoo!</option>
-                        <option value="6">Yandex</option>               
+                        <option value="6">Yandex</option>
                     </select>
                 </div>
             </div>
@@ -325,247 +331,221 @@
                         <option value="8">Romania</option>
                         <option value="9">San Francisco - US</option>
                         <option value="10">Sydney</option>
-                        <option value="11">Washington - US</option>                    
+                        <option value="11">Washington - US</option>
                     </select>
                 </div>
             </div>
             <div class="pad">
                 <h5>Appearance</h5>
                 <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="ChangeColorByPage">
-                        <span class="mdl-switch__label">Colored tabs</span>
-                        <input type="checkbox" id="ChangeColorByPage" class="mdl-switch__input">
-                    </label>
+                    <span class="mdl-switch__label">Colored tabs</span>
+                    <input type="checkbox" id="ChangeColorByPage" class="mdl-switch__input">
+                </label>
             </div>
             <div class="pad">
                 <h5>Contents</h5>
                 <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="allowScript">
-                        <span class="mdl-switch__label">Allow Javascript</span>
-                        <input type="checkbox" id="allowScript" class="mdl-switch__input" checked>    
+                    <span class="mdl-switch__label">Allow Javascript</span>
+                    <input type="checkbox" id="allowScript" class="mdl-switch__input" checked>
                 </label>
                 <br></br>
                 <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="allowImage">
-                        <span class="mdl-switch__label">Allow Images</span>
-                        <input type="checkbox" id="allowImage" class="mdl-switch__input" checked>    
+                    <span class="mdl-switch__label">Allow Images</span>
+                    <input type="checkbox" id="allowImage" class="mdl-switch__input" checked>
                 </label>
                 <br></br>
                 <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="DNT">
-                        <span class="mdl-switch__label">Send a "Do Not Track" request with your browsing traffic</span>
-                        <input type="checkbox" id="DNT" class="mdl-switch__input" checked>    
+                    <span class="mdl-switch__label">Send a "Do Not Track" request with your browsing traffic</span>
+                    <input type="checkbox" id="DNT" class="mdl-switch__input" checked>
                 </label>
             </div>
             <div class="pad">
                 <h5>Utilities</h5>
                 <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="blockads">
-                        <span class="mdl-switch__label">Block Ads</span>
-                        <input type="checkbox" id="blockads" class="mdl-switch__input">    
+                    <span class="mdl-switch__label">Block Ads</span>
+                    <input type="checkbox" id="blockads" class="mdl-switch__input">
 
                 </label>
                 <br></br>
-                <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" disabled>
+                <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent"
+                    disabled>
                     Edit Ad Blocking Filter Lists
-                 </button>
-                 <br></br>
+                </button>
+                <br></br>
                 <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="blockUnsafeWeb">
-                        <span class="mdl-switch__label">Block phishing and dangerous sites (Cyradar)</span>
-                        <input type="checkbox" id="blockUnsafeWeb" class="mdl-switch__input">    
-                    </label>
+                    <span class="mdl-switch__label">Block phishing and dangerous sites (Cyradar)</span>
+                    <input type="checkbox" id="blockUnsafeWeb" class="mdl-switch__input">
+                </label>
                 <br></br>
                 <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="labanDic">
-                        <span class="mdl-switch__label">Double-click to look up meaning in dictionary (Laban Dictionary)</span>
-                        <input type="checkbox" id="labanDic" class="mdl-switch__input">    
-                    </label>
+                    <span class="mdl-switch__label">Double-click to look up meaning in dictionary (Laban
+                        Dictionary)</span>
+                    <input type="checkbox" id="labanDic" class="mdl-switch__input">
+                </label>
                 <br></br>
                 <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="macRender">
-                        <span class="mdl-switch__label">Use Mac Rendering on web page</span>
-                        <input type="checkbox" id="macRender" class="mdl-switch__input">    
+                    <span class="mdl-switch__label">Use Mac Rendering on web page</span>
+                    <input type="checkbox" id="macRender" class="mdl-switch__input">
                 </label>
             </div>
             <div class="pad">
                 <h5>Tabs</h5>
                 <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="closeOnLastTab">
-                        <span class="mdl-switch__label">Close browser window when the last tab is closed</span>
-                        <input type="checkbox" id="closeOnLastTab" class="mdl-switch__input" checked>    
-                    </label>
+                    <span class="mdl-switch__label">Close browser window when the last tab is closed</span>
+                    <input type="checkbox" id="closeOnLastTab" class="mdl-switch__input" checked>
+                </label>
             </div>
             <div class="pad">
                 <h5>Advanced</h5>
                 <label class="mdl-switch mdl-js-switch mdl-js-ripple-effect" for="hardalc">
-                        <span class="mdl-switch__label">Use hardware acceleration when available</span>
-                        <input type="checkbox" id="hardalc" class="mdl-switch__input">    
+                    <span class="mdl-switch__label">Use hardware acceleration when available</span>
+                    <input type="checkbox" id="hardalc" class="mdl-switch__input">
                 </label>
             </div>
             <br></br>
         </div>
         <script>
+            const remote = require('@electron/remote')
             const {
-                remote,
                 ipcRenderer
             } = require('electron')
             const settings = require('electron-settings');
-
-            switch(settings.get("settings.nvProxy")) {
-                case 'http://kt-browser.com/Singapore.pac':
-                    $('#VPNSelector')
-                        .val("2")
-                    break
-                case 'http://kt-browser.com/Frankfurt.pac':
-                    $('#VPNSelector')
-                        .val("3")
-                    break
-                case 'http://kt-browser.com/HongKong.pac':
-                    $('#VPNSelector')
-                        .val("4")
-                    break
-                case 'http://kt-browser.com/LondonUK.pac':
-                    $('#VPNSelector')
-                        .val("5")
-                    break
-                case 'http://kt-browser.com/LosAngelesUS.pac':
-                    $('#VPNSelector')
-                        .val("6")
-                    break
-                case 'http://kt-browser.com/NewYorkUS.pac':
-                    $('#VPNSelector')
-                        .val("7")
-                    break
-                case 'http://kt-browser.com/Romania.pac':
-                    $('#VPNSelector')
-                        .val("8")
-                    break
-                case 'http://kt-browser.com/SanFranciscoUS.pac':
-                    $('#VPNSelector')
-                        .val("9")
-                    break
-                case 'http://kt-browser.com/Sydney.pac':
-                    $('#VPNSelector')
-                        .val("10")
-                    break
-                case 'http://kt-browser.com/WashingtonUS.pac':
-                    $('#VPNSelector')
-                        .val("11")
-                    break
+            const currentProxy = settings.getSync("settings.nvProxy");
+            switch (currentProxy) {
+                case 'http://kt-browser.com/Singapore.pac': $('#VPNSelector').val("2"); break;
+                case 'http://kt-browser.com/Frankfurt.pac': $('#VPNSelector').val("3"); break;
+                case 'http://kt-browser.com/HongKong.pac': $('#VPNSelector').val("4"); break;
+                case 'http://kt-browser.com/LondonUK.pac': $('#VPNSelector').val("5"); break;
+                case 'http://kt-browser.com/LosAngelesUS.pac': $('#VPNSelector').val("6"); break;
+                case 'http://kt-browser.com/NewYorkUS.pac': $('#VPNSelector').val("7"); break;
+                case 'http://kt-browser.com/Romania.pac': $('#VPNSelector').val("8"); break;
+                case 'http://kt-browser.com/SanFranciscoUS.pac': $('#VPNSelector').val("9"); break;
+                case 'http://kt-browser.com/Sydney.pac': $('#VPNSelector').val("10"); break;
+                case 'http://kt-browser.com/WashingtonUS.pac': $('#VPNSelector').val("11"); break;
+                default: $('#VPNSelector').val("2"); // Default
             }
-            $('#SESelector').val(settings.get("settings.SearchEngine"))
-            homePage.value = settings.get("settings.homePage")
-            if((settings.get("settings.homePage") == "") || (settings.get("settings.homePage") == "undefined")) {
-                homePage.value = "kt-browser://newtab"
+            $('#SESelector').val(settings.getSync("settings.SearchEngine"));
+            let hp = settings.getSync("settings.homePage");
+            if (!hp || hp === "undefined") {
+                hp = "kt-browser://newtab";
             }
-            hardalc.checked = settings.get("settings.hardalc")
-            labanDic.checked = settings.get("settings.labanDic")
-            macRender.checked = settings.get("settings.macRender")
-            ChangeColorByPage.checked = settings.get("settings.colorByPage")
-            closeOnLastTab.checked = settings.get("settings.closeOnLastTab")
-            blockads.checked = settings.get("settings.blockads")
-            allowScript.checked = settings.get("settings.allowScript")
-            allowImage.checked = settings.get("settings.allowImage")
-            DNT.checked = settings.get("settings.DNT")
-            blockUnsafeWeb.checked = settings.get("settings.blockUnsafeWeb")
-
-                ! function() {
-                    "use strict";
-                    var e = function(e) {
-                        this.element_ = e, this.init()
-                    };
-                    window.MaterialSelectfield = e, e.prototype.Constant_ = {}, e.prototype.CssClasses_ = {
-                        LABEL: "mdl-selectield__label",
-                        SELECT: "mdl-selectfield__select",
-                        IS_DIRTY: "is-dirty",
-                        IS_FOCUSED: "is-focused",
-                        IS_DISABLED: "is-disabled",
-                        IS_INVALID: "is-invalid",
-                        IS_UPGRADED: "is-upgraded"
-                    }, e.prototype.onFocus_ = function(e) {
-                        this.element_.classList.add(this.CssClasses_.IS_FOCUSED)
-                    }, e.prototype.onBlur_ = function(e) {
-                        this.element_.classList.remove(this.CssClasses_.IS_FOCUSED)
-                    }, e.prototype.onReset_ = function(e) {
-                        this.updateClasses_()
-                    }, e.prototype.updateClasses_ = function() {
-                        this.checkDisabled(), this.checkValidity(), this.checkDirty()
-                    }, e.prototype.checkDisabled = function() {
-                        this.select_.disabled ? this.element_.classList.add(this.CssClasses_.IS_DISABLED) : this.element_
-                            .classList.remove(this.CssClasses_.IS_DISABLED)
-                    }, e.prototype.checkDisabled = e.prototype.checkDisabled, e.prototype.checkValidity = function() {
-                        this.select_.validity.valid ? this.element_.classList.remove(this.CssClasses_.IS_INVALID) :
-                            this.element_.classList.add(this.CssClasses_.IS_INVALID)
-                    }, e.prototype.checkValidity = e.prototype.checkValidity, e.prototype.checkDirty = function() {
-                        this.select_.value && this.select_.value.length > 0 ? this.element_.classList.add(this.CssClasses_
-                            .IS_DIRTY) : this.element_.classList.remove(this.CssClasses_.IS_DIRTY)
-                    }, e.prototype.checkDirty = e.prototype.checkDirty, e.prototype.disable = function() {
-                        this.select_.disabled = !0, this.updateClasses_()
-                    }, e.prototype.disable = e.prototype.disable, e.prototype.enable = function() {
-                        this.select_.disabled = !1, this.updateClasses_()
-                    }, e.prototype.enable = e.prototype.enable, e.prototype.change = function(e) {
-                        e && (this.select_.value = e), this.updateClasses_()
-                    }, e.prototype.change = e.prototype.change, e.prototype.init = function() {
-                        if(this.element_ && (this.label_ = this.element_.querySelector("." + this.CssClasses_.LABEL), this.select_ = this.element_.querySelector("." + this.CssClasses_.SELECT), this.select_)) {
-                            if(this.boundUpdateClassesHandler = this.updateClasses_.bind(this), this.boundFocusHandler =
-                                this.onFocus_.bind(this), this.boundBlurHandler = this.onBlur_.bind(this), this.boundResetHandler =
-                                this.onReset_.bind(this), this.select_.addEventListener("change", this.boundUpdateClassesHandler), this.select_.addEventListener("focus", this.boundFocusHandler), this.select_.addEventListener(
-                                    "blur", this.boundBlurHandler), this.select_.addEventListener("reset", this.boundResetHandler), "function" == typeof MaterialMenu) {
-                                var e = this,
-                                    t = "plc-" + (new Date)
+            document.getElementById('homePage').value = hp;
+            //
+            hardalc.checked = settings.getSync("settings.hardalc")
+            labanDic.checked = settings.getSync("settings.labanDic")
+            macRender.checked = settings.getSync("settings.macRender")
+            ChangeColorByPage.checked = settings.getSync("settings.colorByPage")
+            closeOnLastTab.checked = settings.getSync("settings.closeOnLastTab")
+            blockads.checked = settings.getSync("settings.blockads")
+            allowScript.checked = settings.getSync("settings.allowScript")
+            allowImage.checked = settings.getSync("settings.allowImage")
+            DNT.checked = settings.getSync("settings.DNT")
+            blockUnsafeWeb.checked = settings.getSync("settings.blockUnsafeWeb")
+            ! function () {
+                "use strict";
+                var e = function (e) {
+                    this.element_ = e, this.init()
+                };
+                window.MaterialSelectfield = e, e.prototype.Constant_ = {}, e.prototype.CssClasses_ = {
+                    LABEL: "mdl-selectield__label",
+                    SELECT: "mdl-selectfield__select",
+                    IS_DIRTY: "is-dirty",
+                    IS_FOCUSED: "is-focused",
+                    IS_DISABLED: "is-disabled",
+                    IS_INVALID: "is-invalid",
+                    IS_UPGRADED: "is-upgraded"
+                }, e.prototype.onFocus_ = function (e) {
+                    this.element_.classList.add(this.CssClasses_.IS_FOCUSED)
+                }, e.prototype.onBlur_ = function (e) {
+                    this.element_.classList.remove(this.CssClasses_.IS_FOCUSED)
+                }, e.prototype.onReset_ = function (e) {
+                    this.updateClasses_()
+                }, e.prototype.updateClasses_ = function () {
+                    this.checkDisabled(), this.checkValidity(), this.checkDirty()
+                }, e.prototype.checkDisabled = function () {
+                    this.select_.disabled ? this.element_.classList.add(this.CssClasses_.IS_DISABLED) : this.element_
+                        .classList.remove(this.CssClasses_.IS_DISABLED)
+                }, e.prototype.checkDisabled = e.prototype.checkDisabled, e.prototype.checkValidity = function () {
+                    this.select_.validity.valid ? this.element_.classList.remove(this.CssClasses_.IS_INVALID) :
+                        this.element_.classList.add(this.CssClasses_.IS_INVALID)
+                }, e.prototype.checkValidity = e.prototype.checkValidity, e.prototype.checkDirty = function () {
+                    this.select_.value && this.select_.value.length > 0 ? this.element_.classList.add(this.CssClasses_
+                        .IS_DIRTY) : this.element_.classList.remove(this.CssClasses_.IS_DIRTY)
+                }, e.prototype.checkDirty = e.prototype.checkDirty, e.prototype.disable = function () {
+                    this.select_.disabled = !0, this.updateClasses_()
+                }, e.prototype.disable = e.prototype.disable, e.prototype.enable = function () {
+                    this.select_.disabled = !1, this.updateClasses_()
+                }, e.prototype.enable = e.prototype.enable, e.prototype.change = function (e) {
+                    e && (this.select_.value = e), this.updateClasses_()
+                }, e.prototype.change = e.prototype.change, e.prototype.init = function () {
+                    if (this.element_ && (this.label_ = this.element_.querySelector("." + this.CssClasses_.LABEL), this.select_ = this.element_.querySelector("." + this.CssClasses_.SELECT), this.select_)) {
+                        if (this.boundUpdateClassesHandler = this.updateClasses_.bind(this), this.boundFocusHandler =
+                            this.onFocus_.bind(this), this.boundBlurHandler = this.onBlur_.bind(this), this.boundResetHandler =
+                            this.onReset_.bind(this), this.select_.addEventListener("change", this.boundUpdateClassesHandler), this.select_.addEventListener("focus", this.boundFocusHandler), this.select_.addEventListener(
+                                "blur", this.boundBlurHandler), this.select_.addEventListener("reset", this.boundResetHandler), "function" == typeof MaterialMenu) {
+                            var e = this,
+                                t = "plc-" + (new Date)
                                     .getTime(),
-                                    s = document.createElement("div");
-                                if(s.id = t, s.classList.add("mdl-selectfield__placeholder"), s.innerHTML =
-                                    '<i class="material-icons" tabindex="-1">arrow_drop_down</i>', s.addEventListener(
-                                        "click",
-                                        function() {
-                                            e.select_.focus()
-                                        }), this.element_.appendChild(s), this.options_ = this.select_.querySelectorAll(
+                                s = document.createElement("div");
+                            if (s.id = t, s.classList.add("mdl-selectfield__placeholder"), s.innerHTML =
+                                '<i class="material-icons" tabindex="-1">arrow_drop_down</i>', s.addEventListener(
+                                    "click",
+                                    function () {
+                                        e.select_.focus()
+                                    }), this.element_.appendChild(s), this.options_ = this.select_.querySelectorAll(
                                         "option"), this.options_.length) {
-                                    var i = document.createElement("ul");
-                                    i.classList.add("mdl-menu"), i.classList.add("mdl-js-menu"), i.classList.add(
-                                        "mdl-js-ripple-effect"), i.tabIndex = "-1", i.setAttribute("for", t), i.addEventListener(
+                                var i = document.createElement("ul");
+                                i.classList.add("mdl-menu"), i.classList.add("mdl-js-menu"), i.classList.add(
+                                    "mdl-js-ripple-effect"), i.tabIndex = "-1", i.setAttribute("for", t), i.addEventListener(
                                         "mousewheel",
-                                        function(e) {
+                                        function (e) {
                                             (this.scrollTop === this.scrollHeight - this.offsetHeight && e.wheelDelta <
                                                 0 || 0 === this.scrollTop && e.wheelDelta > 0) && e.preventDefault()
                                         });
-                                    for(var l = 0; l < this.options_.length; l++) {
-                                        var n = this.options_[l],
-                                            a = ((n.textContent || "")
-                                                .toUpperCase()
-                                                .replace(/( )|(\n)/g, ""), document
+                                for (var l = 0; l < this.options_.length; l++) {
+                                    var n = this.options_[l],
+                                        a = ((n.textContent || "")
+                                            .toUpperCase()
+                                            .replace(/( )|(\n)/g, ""), document
                                                 .createElement("li"));
-                                        a.textContent = n.textContent, a.classList.add("mdl-menu__item"), a.setAttribute(
-                                            "data-value", l), a.tabIndex = "-1", a.addEventListener("mousedown", function() {
+                                    a.textContent = n.textContent, a.classList.add("mdl-menu__item"), a.setAttribute(
+                                        "data-value", l), a.tabIndex = "-1", a.addEventListener("mousedown", function () {
                                             e.select_.selectedIndex = this.getAttribute("data-value"), e.updateClasses_()
                                         }), i.appendChild(a), this.element_.appendChild(i)
-                                    }
                                 }
-                                componentHandler.upgradeDom("MaterialMenu")
                             }
-                            this.updateClasses_(), this.element_.classList.add(this.CssClasses_.IS_UPGRADED)
+                            componentHandler.upgradeDom("MaterialMenu")
                         }
-                    }, e.prototype.mdlDowngrade_ = function() {
-                        this.select_.removeEventListener("change", this.boundUpdateClassesHandler), this.select_.removeEventListener(
-                            "focus", this.boundFocusHandler), this.select_.removeEventListener("blur", this.boundBlurHandler), this.select_.removeEventListener("reset", this.boundResetHandler)
-                    }, componentHandler.register({
-                        constructor: e,
-                        classAsString: "MaterialSelectfield",
-                        cssClass: "mdl-js-selectfield",
-                        widget: !0
-                    })
-                }();
+                        this.updateClasses_(), this.element_.classList.add(this.CssClasses_.IS_UPGRADED)
+                    }
+                }, e.prototype.mdlDowngrade_ = function () {
+                    this.select_.removeEventListener("change", this.boundUpdateClassesHandler), this.select_.removeEventListener(
+                        "focus", this.boundFocusHandler), this.select_.removeEventListener("blur", this.boundBlurHandler), this.select_.removeEventListener("reset", this.boundResetHandler)
+                }, componentHandler.register({
+                    constructor: e,
+                    classAsString: "MaterialSelectfield",
+                    cssClass: "mdl-js-selectfield",
+                    widget: !0
+                })
+            }();
             //# sourceMappingURL=mdl-selectfield.min.js.map
         </script>
         <script>
-            (function($) {
+            (function ($) {
 
-                $.fn.visible = function(partial) {
+                $.fn.visible = function (partial) {
 
                     var $t = $(this),
                         $w = $(window),
                         viewTop = $w.scrollTop(),
                         viewBottom = viewTop + $w.height(),
                         _top = $t.offset()
-                        .top,
+                            .top,
                         _bottom = _top + $t.height(),
                         compareTop = partial === true ? _bottom : _top,
                         compareBottom = partial === true ? _top : _bottom;
 
-                    return((compareBottom <= viewBottom) && (compareTop >= viewTop));
+                    return ((compareBottom <= viewBottom) && (compareTop >= viewTop));
 
                 };
 
@@ -575,9 +555,9 @@
 
             var allMods = $(".module");
 
-            allMods.each(function(i, el) {
+            allMods.each(function (i, el) {
                 var el = $(el);
-                if(el.visible(true)) {
+                if (el.visible(true)) {
                     el.addClass("already-visible");
                 }
             });
@@ -585,11 +565,11 @@
             var poz = $(window)
                 .scrollTop();
 
-            win.scroll(function(event) {
+            win.scroll(function (event) {
 
-                allMods.each(function(i, el) {
+                allMods.each(function (i, el) {
                     var el = $(el);
-                    if(el.visible(true)) {
+                    if (el.visible(true)) {
 
                         el.addClass("come-in");
 
@@ -601,34 +581,106 @@
     </div>
     <div>
         <script>
-            if(typeof module === 'object') {
+            if (typeof module === 'object') {
                 window.module = module;
                 module = undefined;
             }
         </script>
         <script src="js/jquery/jquery-ui.min.js"></script>
         <script>
-            if(window.module) module = window.module;
+            if (window.module) module = window.module;
         </script>
         <script>
-            Array.prototype.forEach || (Array.prototype.forEach = function(r, t) {
+            Array.prototype.forEach || (Array.prototype.forEach = function (r, t) {
                 var o, n;
-                if(null === this) throw new TypeError(" this is null or not defined");
+                if (null === this) throw new TypeError(" this is null or not defined");
                 var e = Object(this),
                     i = e.length >>> 0;
-                if("function" != typeof r) throw new TypeError(r + " is not a function");
-                for(arguments.length > 1 && (o = t), n = 0; i > n;) {
+                if ("function" != typeof r) throw new TypeError(r + " is not a function");
+                for (arguments.length > 1 && (o = t), n = 0; i > n;) {
                     var a;
                     n in e && (a = e[n], r.call(o, a, n, e)), n++
                 }
             });
         </script>
         <script>
-            window.onbeforeunload = function() {
-                if((homePage.value == "") || (homePage.value == "undefined")) {
+
+            function saveSetting(key, value) {
+                settings.setSync(key, value);
+                // Notify main process if needed (e.g. for VPN)
+                if (key === 'settings.nvProxy') {
+                    ipcRenderer.send('update-proxy-settings');
+                }
+            }// 1. Home Page
+            $('#homePage').on('change', function () {
+                saveSetting('settings.homePage', $(this).val());
+            });
+
+            // 2. Search Engine
+            $('#SESelector').on('change', function () {
+                saveSetting('settings.SearchEngine', $(this).val());
+            });
+
+            // 3. VPN / Proxy
+            $('#VPNSelector').on('change', function () {
+                var val = $(this).val();
+                var proxyUrl = '';
+                switch (val) {
+                    case "2": proxyUrl = 'http://kt-browser.com/Singapore.pac'; break;
+                    case "3": proxyUrl = 'http://kt-browser.com/Frankfurt.pac'; break;
+                    case "4": proxyUrl = 'http://kt-browser.com/HongKong.pac'; break;
+                    case "5": proxyUrl = 'http://kt-browser.com/LondonUK.pac'; break;
+                    case "6": proxyUrl = 'http://kt-browser.com/LosAngelesUS.pac'; break;
+                    case "7": proxyUrl = 'http://kt-browser.com/NewYorkUS.pac'; break;
+                    case "8": proxyUrl = 'http://kt-browser.com/Romania.pac'; break;
+                    case "9": proxyUrl = 'http://kt-browser.com/SanFranciscoUS.pac'; break;
+                    case "10": proxyUrl = 'http://kt-browser.com/Sydney.pac'; break;
+                    case "11": proxyUrl = 'http://kt-browser.com/WashingtonUS.pac'; break;
+                }
+                saveSetting('settings.nvProxy', proxyUrl);
+            });
+
+            // 4. Checkboxes (Toggles)
+            // List of IDs mapping to their settings keys
+            const toggles = {
+                'ChangeColorByPage': 'settings.colorByPage',
+                'allowScript': 'settings.allowScript',
+                'allowImage': 'settings.allowImage',
+                'blockads': 'settings.blockads',
+                'DNT': 'settings.DNT',
+                'blockUnsafeWeb': 'settings.blockUnsafeWeb',
+                'labanDic': 'settings.labanDic',
+                'macRender': 'settings.macRender',
+                'closeOnLastTab': 'settings.closeOnLastTab',
+                'hardalc': 'settings.hardalc'
+            };
+
+            for (const [id, settingKey] of Object.entries(toggles)) {
+                $('#' + id).on('change', function () {
+                    saveSetting(settingKey, $(this).is(':checked'));
+                });
+            }
+
+            // Window controls
+            $('.windowbutton-close').click(function () {
+                remote.getCurrentWindow().close();
+            });
+            $('.windowbutton-maximize').click(function () {
+                if (remote.getCurrentWindow().isMaximized()) {
+                    remote.getCurrentWindow().unmaximize();
+                } else {
+                    remote.getCurrentWindow().maximize();
+                }
+            });
+            $('.windowbutton-minimize').click(function () {
+                remote.getCurrentWindow().minimize();
+            });
+            /*
+            window.onbeforeunload = function () {
+                if ((homePage.value == "") || (homePage.value == "undefined")) {
                     homePage.value = "kt-browser://newtab"
                 }
-                switch(VPNSelector.value) {
+                switch (VPNSelector.value) {
                     case "2":
                         proxyValue = 'http://kt-browser.com/Singapore.pac'
                         break
@@ -660,7 +712,7 @@
                         proxyValue = 'http://kt-browser.com/WashingtonUS.pac'
                         break
                 }
-                settings.set('settings', {
+                settings.setSync('settings', {
                     nvProxy: proxyValue,
                     homePage: homePage.value,
                     colorByPage: ChangeColorByPage.checked,
@@ -675,19 +727,48 @@
                     DNT: DNT.checked,
                     blockUnsafeWeb: blockUnsafeWeb.checked
                 })
-    }
-    
-            $('.windowbutton-close').click(function() {
+
+                $('#setting-homePage').on('change', function () {
+                    settings.setSync('settings.homePage', $(this).val());
+                });
+
+                $('#setting-searchEngine').on('change', function () {
+                    settings.setSync('settings.SearchEngine', $(this).val());
+                });
+
+                $('#setting-vpnLocation').on('change', function () {
+                    // Based on your main.js, VPN location is stored in 'settings.nvProxy'
+                    settings.setSync('settings.nvProxy', $(this).val());
+
+                    // Optional: Notify main process to apply proxy immediately
+                    ipcRenderer.send('update-proxy-settings');
+                });
+
+                // Handle Toggles (Checkboxes)
+                $('#setting-colorByPage').on('change', function () {
+                    settings.setSync('settings.colorByPage', $(this).is(':checked'));
+                });
+
+                $('#setting-allowScript').on('change', function () {
+                    settings.setSync('settings.allowScript', $(this).is(':checked'));
+                });
+
+                $('#setting-allowImage').on('change', function () {
+                    settings.setSync('settings.allowImage', $(this).is(':checked'));
+                });
+            }
+            */
+            $('.windowbutton-close').click(function () {
                 remote.getCurrentWindow().close();
             });
-            $('.windowbutton-maximize').click(function() {
-                if(remote.getCurrentWindow().isMaximized()) {
+            $('.windowbutton-maximize').click(function () {
+                if (remote.getCurrentWindow().isMaximized()) {
                     remote.getCurrentWindow().unmaximize();
                 } else {
                     remote.getCurrentWindow().maximize();
                 }
             });
-            $('.windowbutton-minimize').click(function() {
+            $('.windowbutton-minimize').click(function () {
                 remote.getCurrentWindow().minimize();
             });
         </script>

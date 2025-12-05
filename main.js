@@ -204,20 +204,26 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 app.on('ready', function() {
-    protocol.registerFileProtocol('kt-browser', (request, callback) => {
-        var url = request.url.substring(13)
-        var lastChar = url.slice(-1)
-        var s = url.split("/");
-        if(lastChar !== "/") {
-            url = url.replace(s[0], "")
+    protocol.handle('kt-browser', (request) => {
+        let url = request.url.substring(13); // Strip 'kt-browser://'
+        
+        // 1. Remove query parameters (e.g. ?query=...)
+        url = url.split('?')[0];
+
+        // 2. Handle Directory/Extension logic
+        if (url.endsWith('/')) {
+            url += 'index.html'; // Default to index.html for folders
+        } else if (!path.extname(url)) {
+            // If no extension (like 'history'), assume .html
+            url += '.html';
         }
-        if (lastChar === "/") {
-            url = url.slice(0, -1) + ".html";
-        }
-        return new Response(path.normalize(`${__dirname}/${url}`));
-    }, (error) => {
-        if (error) console.error('Failed to register protocol');
-    })
+
+        // 3. Normalize path to prevent directory traversal
+        const filePath = path.normalize(`${__dirname}/${url}`);
+
+        // 4. Serve the file
+        return net.fetch(require('url').pathToFileURL(filePath).toString());
+    });
     createWindow();
 });
 
@@ -245,3 +251,36 @@ try {
 global.sharedObj = {
     prop1: "siema"
 };
+ipcMain.on('settings-changed', (event, args) => {
+    // Reload configuration in the main window if necessary
+    if (mainWindow && mainWindow.webContents) {
+        
+        // If Appearance/Color changed
+        if (args.key === 'settings.colorByPage') {
+            // Trigger color update logic
+            mainWindow.webContents.executeJavaScript(`
+                if(typeof window.updateColor === 'function') { window.updateColor(); }
+            `);
+        }
+        
+        // If Web Content settings changed (Images/JS)
+        // Note: This usually requires a reload of the webview to take effect
+        if (args.key === 'settings.allowScript' || args.key === 'settings.allowImage') {
+            // You might want to show a toast saying "Reload tab to apply"
+        }
+    }
+});
+
+ipcMain.on('update-proxy-settings', () => {
+    if (mainWindow && mainWindow.webContents) {
+        var session = mainWindow.webContents.session;
+        var useVPN = settings.getSync('static.VPN');
+        var proxyScript = settings.getSync("settings.nvProxy");
+
+        session.setProxy({
+            pacScript: useVPN ? proxyScript : ""
+        }).then(() => {
+            console.log("Proxy hot-swapped. VPN active:", useVPN);
+        }).catch(err => console.error("Proxy update failed:", err));
+    }
+});

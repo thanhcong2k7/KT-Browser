@@ -3,6 +3,9 @@ function isInArray(value, array) {
 }
 
 var jsonObj = getHistoryData()
+if (!jsonObj || !jsonObj.history) {
+    jsonObj = { history: [] };
+}
 var dates = []
 var cards = []
 var items = []

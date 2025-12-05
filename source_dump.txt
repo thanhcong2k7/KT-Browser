@@ -361,23 +361,26 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 app.on('ready', function() {
-    protocol.registerFileProtocol('kt-browser', (request, callback) => {
-        var url = request.url.substr(13)
-        var lastChar = url.substr(url.length - 1)
-        var s = url.split("/");
-        if(lastChar != "/") {
-            url = url.replace(s[0], "")
+    protocol.handle('kt-browser', (request) => {
+        let url = request.url.substring(13); // Strip 'kt-browser://'
+        
+        // 1. Remove query parameters (e.g. ?query=...)
+        url = url.split('?')[0];
+
+        // 2. Handle Directory/Extension logic
+        if (url.endsWith('/')) {
+            url += 'index.html'; // Default to index.html for folders
+        } else if (!path.extname(url)) {
+            // If no extension (like 'history'), assume .html
+            url += '.html';
         }
-        if(lastChar == "/") {
-            url = url.substring(0, url.length - 1)
-            url += ".html"
-        }
-        callback({
-            path: path.normalize(`${__dirname}/${url}`)
-        })
-    }, (error) => {
-        if (error) console.error('Failed to register protocol');
-    })
+
+        // 3. Normalize path to prevent directory traversal
+        const filePath = path.normalize(`${__dirname}/${url}`);
+
+        // 4. Serve the file
+        return net.fetch(require('url').pathToFileURL(filePath).toString());
+    });
     createWindow();
 });
 
@@ -537,10 +540,12 @@ function hideDialog(dialog, callback) {
 
 ### js/main.js
 ```js
-(function() {
+(function () {
     const electron = require('electron')
     const remote = require('@electron/remote')
-    
+    const localShortcut = require('electron-localshortcut');
+    const win = remote.getCurrentWindow();
+    localShortcut.unregisterAll(win);
     // CRITICAL FIX: Polyfill electron.remote globally for legacy libs
     if (!electron.remote) {
         electron.remote = remote;
@@ -560,196 +565,205 @@ function hideDialog(dialog, callback) {
     var fs = require('fs');
     const settings = require('electron-settings');
     // REPLACEMENT: electron-is-dev is ESM only, use native check
-    const isDev = !app.isPackaged; 
-    
+    const isDev = !app.isPackaged;
+
     var IsThere = require("is-there");
-    
+
     // SAFELY ACCESS STARTARGS
     var startArgs = remote.getGlobal("startArgs");
     var fileToStart = (startArgs && startArgs.data) ? startArgs.data[2] : null;
-    
+
     var historyPath = app.getPath('userData') + '/User Data/History';
     var userdataPath = app.getPath('userData') + '/User Data';
 
     $(document).ready(function () {
-        setInterval(function () {
-            if (colorBrightness($(document.body).css('background-color')) < 150) {
-                for (var i = 0; i < tabCollection.length; i++) {
-                    tabCollection[i].Title.css('color', '#fff')
-                    tabCollection[i].Preloader.attr('color', '#fff')
-                    tabCollection[i].closeBtn.css('color', '#fff')
+        if ($('#tabbar').length > 0) {
+            setInterval(function () {
+                if (colorBrightness($(document.body).css('background-color')) < 150) {
+                    for (var i = 0; i < tabCollection.length; i++) {
+                        tabCollection[i].Title.css('color', '#fff')
+                        tabCollection[i].Preloader.attr('color', '#fff')
+                        tabCollection[i].closeBtn.css('color', '#fff')
+                    }
+                } else {
+                    for (var i = 0; i < tabCollection.length; i++) {
+                        tabCollection[i].Title.css('color', '#444')
+                        tabCollection[i].Preloader.attr('color', '#3F51B5')
+                        tabCollection[i].closeBtn.css('color', '#000')
+                    }
                 }
-            } else {
-                for (var i = 0; i < tabCollection.length; i++) {
-                    tabCollection[i].Title.css('color', '#444')
-                    tabCollection[i].Preloader.attr('color', '#3F51B5')
-                    tabCollection[i].closeBtn.css('color', '#000')
-                }
-            }
-        }, 200);
+            }, 200);
+            window.updateProxySettings();
 
-        var tab = new Tab(),
-            instance = $('#instances').browser({
-                tab: tab,
-                url: settings.getSync("settings.homePage") || "kt-browser://newtab"
-            })
-        addTab(instance, tab);
-
-        globalShortcut.register('CmdOrCtrl+T', () => {
-            if (remote.getCurrentWindow().isFocused())
-                var tab = new Tab(),
-                    instance = $('#instances').browser({
-                        tab: tab,
-                        url: settings.getSync("settings.homePage") || "kt-browser://newtab"
-                    })
+            var tab = new Tab(),
+                instance = $('#instances').browser({
+                    tab: tab,
+                    url: settings.getSync("settings.homePage") || "kt-browser://newtab"
+                })
             addTab(instance, tab);
-        });
-        globalShortcut.register('F11', () => {
-            if (remote.getCurrentWindow().isFullScreen()) {
-                remote.getCurrentWindow().setFullScreen(false);
-            } else {
-                remote.getCurrentWindow().setFullScreen(true);
-            }
-        });
 
-        globalShortcut.register('Esc', () => {
-            if (remote.getCurrentWindow().isFullScreen()) {
-                remote.getCurrentWindow().setFullScreen(false);
-            }
-        });
+            localShortcut.register(win, 'CmdOrCtrl+T', () => {
+                if (remote.getCurrentWindow().isFocused())
+                    var tab = new Tab(),
+                        instance = $('#instances').browser({
+                            tab: tab,
+                            url: settings.getSync("settings.homePage") || "kt-browser://newtab"
+                        })
+                addTab(instance, tab);
+            });
+            localShortcut.register(win, 'F11', () => {
+                if (remote.getCurrentWindow().isFullScreen()) {
+                    remote.getCurrentWindow().setFullScreen(false);
+                } else {
+                    remote.getCurrentWindow().setFullScreen(true);
+                }
+            });
 
-        globalShortcut.register('CmdOrCtrl+W', () => {
-            if (remote.getCurrentWindow().isFocused()) {
-                for (var i = 0; i < tabCollection.length; i++) {
-                    if (tabCollection[i].selected) {
+            localShortcut.register(win, 'Esc', () => {
+                if (remote.getCurrentWindow().isFullScreen()) {
+                    remote.getCurrentWindow().setFullScreen(false);
+                }
+            });
+
+            localShortcut.register(win, 'CmdOrCtrl+W', () => {
+                if (remote.getCurrentWindow().isFocused()) {
+                    for (var i = 0; i < tabCollection.length; i++) {
+                        if (tabCollection[i].selected) {
+                            tabCollection[i].closeBtn.click();
+                        }
+                    }
+                }
+            });
+            localShortcut.register(win, 'CmdOrCtrl+F4', () => {
+                if (remote.getCurrentWindow().isFocused()) {
+                    for (var i = 0; i < tabCollection.length; i++) {
+                        if (tabCollection[i].selected) {
+                            tabCollection[i].closeBtn.click();
+                        }
+                    }
+                }
+            });
+            localShortcut.register(win, 'CmdOrCtrl+Shift+W', () => {
+                if (remote.getCurrentWindow().isFocused()) {
+                    for (var i = 0; i < tabCollection.length; i++) {
                         tabCollection[i].closeBtn.click();
                     }
                 }
-            }
-        });
-        globalShortcut.register('CmdOrCtrl+F4', () => {
-            if (remote.getCurrentWindow().isFocused()) {
-                for (var i = 0; i < tabCollection.length; i++) {
-                    if (tabCollection[i].selected) {
-                        tabCollection[i].closeBtn.click();
+            });
+            localShortcut.register(win, 'CmdOrCtrl+H', () => {
+                if (remote.getCurrentWindow().isFocused())
+                    var tab = new Tab(),
+                        instance = $('#instances').browser({
+                            tab: tab,
+                            url: 'kt-browser://history/'
+                        })
+                addTab(instance, tab);
+            });
+            localShortcut.register(win, 'CmdOrCtrl+T', () => {
+                if (remote.getCurrentWindow().isFocused())
+                    var tab = new Tab(),
+                        instance = $('#instances').browser({
+                            tab: tab,
+                            url: settings.getSync("settings.homePage", "kt-browser://newtab")
+                        })
+                addTab(instance, tab);
+            });
+            localShortcut.register(win, 'CmdOrCtrl+Shift+T', () => {
+                if (remote.getCurrentWindow().isFocused())
+                    Toast_Material({
+                        content: "Not yet complete",
+                        updown: "bottom",
+                        position: "center",
+                        align: "center"
+                    });
+            });
+
+            document.addEventListener("contextmenu", function (e, params) {
+                e.preventDefault();
+                e.stopPropagation();
+                //TODO: can...
+                let node = e.target;
+                while (node) {
+                    if (node.nodeName.match(/^(input|textarea)$/i) || node.isContentEditable) {
+                        const menu = new Menu()
+                        menu.append(new MenuItem({
+                            label: 'Undo',
+                            accelerator: 'CmdOrCtrl+Z',
+                            role: 'undo'
+                        }))
+                        menu.append(new MenuItem({
+                            label: 'Redo',
+                            accelerator: 'CmdOrCtrl+Shift+Z',
+                            role: 'redo'
+                        }))
+                        menu.append(new MenuItem({
+                            type: 'separator'
+                        }))
+                        menu.append(new MenuItem({
+                            label: 'Cut',
+                            accelerator: 'CmdOrCtrl+X',
+                            role: 'cut'
+                        }))
+                        menu.append(new MenuItem({
+                            label: 'Copy',
+                            accelerator: 'CmdOrCtrl+C',
+                            role: 'copy'
+                        }))
+                        menu.append(new MenuItem({
+                            label: 'Paste',
+                            accelerator: 'CmdOrCtrl+V',
+                            role: 'paste'
+                        }))
+                        menu.append(new MenuItem({
+                            type: 'separator'
+                        }))
+                        menu.append(new MenuItem({
+                            label: 'Select All',
+                            accelerator: 'CmdOrCtrl+A',
+                            role: 'selectall'
+                        }))
+
+                        menu.popup(remote.getCurrentWindow())
+                        break;
                     }
+                    node = node.parentNode;
                 }
+            });
+
+            if (settings.getSync('settings.blockads')) {
+                registerFiltering(remote.getCurrentWindow().webContents.session)
             }
-        });
-        globalShortcut.register('CmdOrCtrl+Shift+W', () => {
-            if (remote.getCurrentWindow().isFocused()) {
-                for (var i = 0; i < tabCollection.length; i++) {
-                    tabCollection[i].closeBtn.click();
+            /*
+            setInterval(function () {
+                if (settings.getSync('static.VPN')) {
+                    remote.getCurrentWindow().webContents.session.setProxy({
+                        pacScript: settings.getSync("settings.nvProxy")
+                    }).then(() => { });
+                } else {
+                    remote.getCurrentWindow().webContents.session.setProxy({
+                        pacScript: ""
+                    }).then(() => { });
                 }
-            }
-        });
-        globalShortcut.register('CmdOrCtrl+H', () => {
-            if (remote.getCurrentWindow().isFocused())
-                var tab = new Tab(),
-                    instance = $('#instances').browser({
-                        tab: tab,
-                        url: 'kt-browser://history/'
-                    })
-            addTab(instance, tab);
-        });
-        globalShortcut.register('CmdOrCtrl+T', () => {
-            if (remote.getCurrentWindow().isFocused())
-                var tab = new Tab(),
-                    instance = $('#instances').browser({
-                        tab: tab,
-                        url: settings.getSync("settings.homePage", "kt-browser://newtab")
-                    })
-            addTab(instance, tab);
-        });
-        globalShortcut.register('CmdOrCtrl+Shift+T', () => {
-            if (remote.getCurrentWindow().isFocused())
-                Toast_Material({
-                    content: "Not yet complete",
-                    updown: "bottom",
-                    position: "center",
-                    align: "center"
-                });
-        });
+    
+            }, 1000);
+            */
+            //Disable VPN for now, bug
 
-        document.addEventListener("contextmenu", function (e, params) {
-            e.preventDefault();
-            e.stopPropagation();
-            //TODO: can...
-            let node = e.target;
-            while (node) {
-                if (node.nodeName.match(/^(input|textarea)$/i) || node.isContentEditable) {
-                    const menu = new Menu()
-                    menu.append(new MenuItem({
-                        label: 'Undo',
-                        accelerator: 'CmdOrCtrl+Z',
-                        role: 'undo'
-                    }))
-                    menu.append(new MenuItem({
-                        label: 'Redo',
-                        accelerator: 'CmdOrCtrl+Shift+Z',
-                        role: 'redo'
-                    }))
-                    menu.append(new MenuItem({
-                        type: 'separator'
-                    }))
-                    menu.append(new MenuItem({
-                        label: 'Cut',
-                        accelerator: 'CmdOrCtrl+X',
-                        role: 'cut'
-                    }))
-                    menu.append(new MenuItem({
-                        label: 'Copy',
-                        accelerator: 'CmdOrCtrl+C',
-                        role: 'copy'
-                    }))
-                    menu.append(new MenuItem({
-                        label: 'Paste',
-                        accelerator: 'CmdOrCtrl+V',
-                        role: 'paste'
-                    }))
-                    menu.append(new MenuItem({
-                        type: 'separator'
-                    }))
-                    menu.append(new MenuItem({
-                        label: 'Select All',
-                        accelerator: 'CmdOrCtrl+A',
-                        role: 'selectall'
-                    }))
-
-                    menu.popup(remote.getCurrentWindow())
-                    break;
-                }
-                node = node.parentNode;
-            }
-        });
-
-        if (settings.getSync('settings.blockads')) {
-            registerFiltering(remote.getCurrentWindow().webContents.session)
+            /*
+            //Warning message for alpha version
+            $('.maindiv').msgBox({
+                title: 'Warning',
+                message: 'This is the alpha version of KT Browser 7.0. Keep in mind that this release is not feature-complete yet and there are many bugs and errors to watch out.',
+                buttons: [{
+                    text: 'I understand',
+                    callback: function () {
+                        $('p').fadeIn()
+                    }
+                }],
+                blend: !0
+            });
+            */
         }
-        setInterval(function () {
-            if (settings.getSync('static.VPN')) {
-                remote.getCurrentWindow().webContents.session.setProxy({
-                    pacScript: settings.getSync("settings.nvProxy")
-                }).then(() => { });
-            } else {
-                remote.getCurrentWindow().webContents.session.setProxy({
-                    pacScript: ""
-                }).then(() => { });
-            }
-
-        }, 1000);
-
-        $('.maindiv').msgBox({
-            title: 'Warning',
-            message: 'This is the alpha version of KT Browser 7.0. Keep in mind that this release is not feature-complete yet and there are many bugs and errors to watch out.',
-            buttons: [{
-                text: 'I understand',
-                callback: function () {
-                    $('p').fadeIn()
-                }
-            }],
-            blend: !0
-        });
     })
     window.onresize = function (event) {
         calcSizes(false, false);
@@ -769,13 +783,23 @@ function hideDialog(dialog, callback) {
         remote.getCurrentWindow().minimize();
     });
 
-    window.showApp = function(url) {
+    window.showApp = function (url) {
         const BrowserWindow = remote.BrowserWindow;
 
         var mainWindow = new BrowserWindow({
-            title: 'KT Browser Apps',
-            frame: false
+            title: 'Apps - KT Browser',
+            frame: false,
+            width: 600,
+            height: 750,
+            show: false,
+            // ADD THIS BLOCK TO ALL POPUP WINDOWS:
+            webPreferences: {
+                nodeIntegration: true,
+                contextIsolation: false,
+                enableRemoteModule: true // Required since you use remote inside settings.html
+            }
         })
+
 
         if (isDev) {
             mainWindow.webContents.openDevTools()
@@ -784,16 +808,23 @@ function hideDialog(dialog, callback) {
         mainWindow.loadURL(url)
     }
 
-    window.showWebApp = function(url) {
+    window.showWebApp = function (url) {
         const BrowserWindow = remote.BrowserWindow;
 
         var mainWindow = new BrowserWindow({
             title: 'KT Browser Apps',
             frame: false,
-            "web-preferences": {
+            width: 600,
+            height: 750,
+            show: false,
+            // ADD THIS BLOCK TO ALL POPUP WINDOWS:
+            webPreferences: {
                 "web-security": false,
                 nodeIntegration: true,
-                allowRunningInsecureContent: true
+                allowRunningInsecureContent: true,
+                nodeIntegration: true,
+                contextIsolation: false,
+                enableRemoteModule: true
             }
         })
 
@@ -804,7 +835,7 @@ function hideDialog(dialog, callback) {
         mainWindow.webContents.executeJavaScript("loadPages('" + url + "')")
     }
 
-    window.checkFiles = function() {
+    window.checkFiles = function () {
         if (!IsThere(userdataPath)) {
             fs.mkdirSync(userdataPath, { recursive: true });
         }
@@ -864,7 +895,7 @@ function hideDialog(dialog, callback) {
         return settings.getSync('settings.SearchEngine');
     }
 
-    window.setNightMode = function(value) {
+    window.setNightMode = function (value) {
         settings.setSync('static.NightMode', value);
     }
 
@@ -872,11 +903,23 @@ function hideDialog(dialog, callback) {
         settings.setSync('static.VPN', value);
     }
 
-    window.getSettings = function(setting, defaultvalue) {
+    window.updateProxySettings = function () {
+        var session = remote.getCurrentWindow().webContents.session;
+        var useVPN = settings.getSync('static.VPN');
+        var proxyScript = settings.getSync("settings.nvProxy");
+
+        session.setProxy({
+            pacScript: useVPN ? proxyScript : ""
+        }).then(() => {
+            console.log("Proxy settings updated. VPN: " + useVPN);
+        }).catch(err => console.error("Failed to set proxy", err));
+    };
+
+    window.getSettings = function (setting, defaultvalue) {
         return settings.getSync(setting, defaultvalue);
     }
 
-    window.updatetextColor = function() {
+    window.updatetextColor = function () {
         if (colorBrightness($(document.body).css('background-color')) < 150) {
             for (var i = 0; i < tabCollection.length; i++) {
                 tabCollection[i].Title.css('color', '#fff')
@@ -892,7 +935,7 @@ function hideDialog(dialog, callback) {
         }
     }
 
-    window.updateColor = function() {
+    window.updateColor = function () {
         for (var i = 0; i < tabCollection.length; i++) {
             if (tabCollection[i].selected) {
                 if (tabCollection[i].Color != document.body.style.background) {
@@ -905,7 +948,7 @@ function hideDialog(dialog, callback) {
         updatetextColor()
     }
 
-    window.setColor = function(color) {
+    window.setColor = function (color) {
         $(document.body).css('background-color', color)
         if (colorBrightness(color) < 150) {
             $(document.body).find(".windowbutton-close").css('background-image', 'url(img/WindowButtons/close-white.png)')
@@ -960,6 +1003,53 @@ var rippleTime = 400;
 
 function decode_utf8(s) {
     return unescape(encodeURIComponent(s));
+}
+// js/utils.js
+
+function getDominantColor(imageUrl, callback) {
+    // 1. Fetch the image as a blob to bypass CORS restrictions on Canvas
+    fetch(imageUrl)
+        .then(response => response.blob())
+        .then(blob => {
+            // 2. Create a local Object URL (blob:...)
+            var url = URL.createObjectURL(blob);
+            var img = new Image();
+            
+            img.onload = function() {
+                try {
+                    var canvas = document.createElement('canvas');
+                    var ctx = canvas.getContext('2d');
+                    canvas.width = 1;
+                    canvas.height = 1;
+                    
+                    // 3. Draw 1x1 pixel to get the average color
+                    ctx.drawImage(img, 0, 0, 1, 1);
+                    var p = ctx.getImageData(0, 0, 1, 1).data;
+                    
+                    // Cleanup memory
+                    URL.revokeObjectURL(url);
+                    
+                    // 4. Convert [R, G, B] to Hex String
+                    var hex = "#" + ("000000" + rgbToHex(p[0], p[1], p[2])).slice(-6);
+                    callback(hex);
+                } catch (e) {
+                    console.warn("Color extraction error:", e);
+                    callback("#ffffff");
+                }
+            };
+
+            img.onerror = function() {
+                console.warn("Favicon failed to load for color extraction.");
+                callback("#ffffff");
+            };
+
+            img.src = url;
+        })
+        .catch(err => {
+            // Fallback if fetch fails (e.g. offline)
+            console.warn("Could not fetch favicon for color:", err);
+            callback("#ffffff");
+        });
 }
 
 function shadeColor(color, percent) {
@@ -2198,6 +2288,11 @@ global.getHistoryData = function () {
     if (!fs.existsSync(historyPath)) {
         return { history: [] };
     }
+    try {
+        return JSON.parse(fs.readFileSync(historyPath));
+    } catch (e) {
+        return { history: [] };
+    }
 	return JSON.parse(fs.readFileSync(historyPath));
 }
 
@@ -2295,11 +2390,11 @@ global.MacRender = function () {
 }
 
 document.addEventListener("click", function () {
-	ipcRenderer.sendToHost("clicked");
+	ipcRenderer.sendTo('host', "clicked");
 })
 
 function setStatus(status) {
-	ipcRenderer.sendToHost('status', status);
+	ipcRenderer.sendTo('host','status', status);
 }
 
 global.stylishMenu = function () {
@@ -2517,7 +2612,17 @@ recognizer.onresult = function (event) {
             const BrowserWindow = remote.BrowserWindow;
 
             var mainWindow = new BrowserWindow({
-                frame: false
+                title: 'Settings',
+                frame: false,
+                width: 600,
+                height: 750,
+                show: false,
+                // ADD THIS BLOCK TO ALL POPUP WINDOWS:
+                webPreferences: {
+                    nodeIntegration: true,
+                    contextIsolation: false,
+                    enableRemoteModule: true // Required since you use remote inside settings.html
+                }
             })
             mainWindow.loadURL(`file://${__dirname}/index.html`)
 
@@ -2546,26 +2651,31 @@ recognizer.onresult = function (event) {
         // FIX: Check if t.fullscreen exists before attaching event listener
         if (t.fullscreen) {
             t.fullscreen.click(function(e) {
-                settings.tab.instance.webview.webview.executeJavaScript('isfullscreen()', true, function(result) {
+                // executeJavaScript returns a Promise. 
+                // We pass 'true' for userGesture, though modern Electron often ignores it.
+                settings.tab.instance.webview.webview.executeJavaScript('isfullscreen()', true)
+                .then(result => {
                     if (result == true) {
-                        settings.tab.instance.webview.webview.executeJavaScript('setfullscreen(false)', false);
+                        // No callback needed for setters if we don't care about the result
+                        settings.tab.instance.webview.webview.executeJavaScript('setfullscreen(false)');
                     } else {
-                        settings.tab.instance.webview.webview.executeJavaScript('setfullscreen(true)', false);
+                        settings.tab.instance.webview.webview.executeJavaScript('setfullscreen(true)');
                     }
-                })
+                }).catch(err => console.log("Fullscreen toggle error:", err));
             });
         }
 
         t.nightmode.click(function(e) {
-            settings.tab.instance.webview.webview.executeJavaScript('isNightMode()', true, function(result) {
+            settings.tab.instance.webview.webview.executeJavaScript('isNightMode()', true)
+            .then(result => {
                 if (result == true) {
-                    settings.tab.instance.webview.webview.executeJavaScript('setNightMode(false)', false);
+                    settings.tab.instance.webview.webview.executeJavaScript('setNightMode(false)');
                     settings.tab.instance.webview.webview.reload();
                 } else {
-                    settings.tab.instance.webview.webview.executeJavaScript('setNightMode(true)', false);
-                    settings.tab.instance.webview.webview.executeJavaScript('NightMode()', false);
+                    settings.tab.instance.webview.webview.executeJavaScript('setNightMode(true)');
+                    settings.tab.instance.webview.webview.executeJavaScript('NightMode()');
                 }
-            })
+            }).catch(err => console.log("Night mode toggle error:", err));
         });
 
         t.info.click(function(e) {
@@ -2573,7 +2683,16 @@ recognizer.onresult = function (event) {
 
             var mainWindow = new BrowserWindow({
                 title: 'KT Browser',
-                frame: false
+                frame: false,
+                width: 600,
+                height: 750,
+                show: false,
+                // ADD THIS BLOCK TO ALL POPUP WINDOWS:
+                webPreferences: {
+                    nodeIntegration: true,
+                    contextIsolation: false,
+                    enableRemoteModule: true // Required since you use remote inside settings.html
+                }
             })
             mainWindow.loadURL(`file://${__dirname}/about.html`)
         });
@@ -2590,8 +2709,23 @@ recognizer.onresult = function (event) {
 
             var mainWindow = new BrowserWindow({
                 title: 'Downloads',
-                frame: false
+                frame: false,
+                width: 600,
+                height: 750,
+                show: false,
+                // ADD THIS BLOCK TO ALL POPUP WINDOWS:
+                webPreferences: {
+                    nodeIntegration: true,
+                    contextIsolation: false,
+                    enableRemoteModule: true // Required since you use remote inside settings.html
+                }
             })
+            mainWindow.once('ready-to-show', () => {
+                mainWindow.show();
+            });
+            mainWindow.on('closed', () => {
+                mainWindow = null;
+            });
             mainWindow.loadURL(`file://${__dirname}/downloads.html`)
 
         });
@@ -2603,7 +2737,13 @@ recognizer.onresult = function (event) {
                 frame: false,
                 width: 600,
                 height: 750,
-                show: false
+                show: false,
+                // ADD THIS BLOCK TO ALL POPUP WINDOWS:
+                webPreferences: {
+                    nodeIntegration: true,
+                    contextIsolation: false,
+                    enableRemoteModule: true // Required since you use remote inside settings.html
+                }
             })
 
             mainWindow.once('ready-to-show', () => {
@@ -2622,18 +2762,25 @@ recognizer.onresult = function (event) {
             });
         });
         t.vpn.click(function(e) {
-            if (getVPN()) {
-                setVPN(false)
+            // Toggle the value
+            var newState = !getVPN(); 
+            setVPN(newState);
+            
+            // Apply the proxy change immediately
+            if (typeof window.updateProxySettings === 'function') {
+                window.updateProxySettings();
+            }
+
+            if (newState) {
                 Toast_Material({
-                    content: "VPN is now disabled",
+                    content: "VPN is now enabled. Current location is " + getVPNLocation(),
                     updown: "bottom",
                     position: "center",
                     align: "center"
                 });
             } else {
-                setVPN(true)
                 Toast_Material({
-                    content: "VPN is now enabled. Current location is " + getVPNLocation(),
+                    content: "VPN is now disabled",
                     updown: "bottom",
                     position: "center",
                     align: "center"
@@ -2722,43 +2869,45 @@ recognizer.onresult = function (event) {
 
 ### js/components/webview.js
 ```js
-(function($) {
+(function ($) {
     const remote = require('@electron/remote');
     const { globalShortcut } = remote;
+    const localShortcut = require('electron-localshortcut');
+    const win = remote.getCurrentWindow();
 
-    $.fn.webview = function(params) {
+    $.fn.webview = function (params) {
         var request = require('request');
         var openfpt_api_key = "01b4a2586f2f4ea0a73a6c650f8bd49f"
-        
+
         // Fetch start args from remote globals
         var startArgs = remote.getGlobal("startArgs");
         var fileToStart = (startArgs && startArgs.data) ? startArgs.data[2] : null;
 
         var settings = $.extend({
-                url: "",
-                tab: null
-            }, params),
+            url: "",
+            tab: null
+        }, params),
             t = this,
             lastUrl = ''
-        
+
         var pref = 'contextIsolation=no, nodeIntegration=yes';
         var settingmng = require('electron-settings')
 
-        if(!settingmng.getSync("settings.allowScript")) {
+        if (!settingmng.getSync("settings.allowScript")) {
             pref += ', javascript=0'
         }
-        if(!settingmng.getSync("settings.allowImage")) {
+        if (!settingmng.getSync("settings.allowImage")) {
             pref += ', images=0'
         }
-        
+
         t.isPrivacy = false
-        t.webview = $('<webview class="webview" preload="js/extensions/preload.js" webpreferences="' + pref + '" useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 KT-Browser/7.0.1" autosize="on" src="about:blank" plugins>').appendTo($(this))[0]
+        t.webview = $('<webview class="webview" preload="js/extensions/preload.js" webpreferences="' + pref + '" useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 KT-Browser/7.0.1" autosize="on" src="about:blank" plugins>').appendTo($(this))[0]
         t.storage = new Storage()
         t.string = "Siema"
-        
+
         // Initialize context menu
         t.contextMenu = new ContextMenu(t.webview)
-        
+        // TODO: Add destroy method
         // Helper to safely update bar display
         function setBarDisplay(displayValue) {
             if (settings.tab && settings.tab.instance && settings.tab.instance.bar) {
@@ -2772,140 +2921,140 @@ recognizer.onresult = function (event) {
             }
         }
 
-        t.fitToParent = function() {
+        t.fitToParent = function () {
             $(t.webview).css({
                 width: window.innerWidth,
                 height: window.innerHeight - 79,
                 marginTop: '48px'
             })
-            
+
             setBarDisplay('block');
 
             // Safe executeJavaScript
             try {
                 t.webview.executeJavaScript('isfullscreen()', true)
-                .then(result => {
-                    if(result == true) {
-                        $(t.webview).css({
-                            width: window.innerWidth,
-                            height: window.innerHeight,
-                            marginTop: '-48px'
-                        })
-                        setBarDisplay('none');
-                    } else {
-                        $(t.webview).css({
-                            width: window.innerWidth,
-                            height: window.innerHeight - 79,
-                            marginTop: '48px'
-                        })
-                        setBarDisplay('block');
-                    }
-                }).catch(() => {
-                    // Webview might not be ready, ignore
-                })
+                    .then(result => {
+                        if (result == true) {
+                            $(t.webview).css({
+                                width: window.innerWidth,
+                                height: window.innerHeight,
+                                marginTop: '-48px'
+                            })
+                            setBarDisplay('none');
+                        } else {
+                            $(t.webview).css({
+                                width: window.innerWidth,
+                                height: window.innerHeight - 79,
+                                marginTop: '48px'
+                            })
+                            setBarDisplay('block');
+                        }
+                    }).catch(() => {
+                        // Webview might not be ready, ignore
+                    })
             } catch (e) {
             }
         }
 
         t.fitToParent()
-        
-        globalShortcut.register('F12', () => {
-            if(remote.getCurrentWindow().isFocused())
-                t.webview.inspectElement(0, 0)
+
+        localShortcut.register(win, 'F12', () => {
+            if (remote.getCurrentWindow().isFocused())
+                t.webview.openDevTools()
         });
-        globalShortcut.register('CmdOrCtrl+Shift+I', () => {
-            if(remote.getCurrentWindow().isFocused())
-                t.webview.inspectElement(0, 0)
+        localShortcut.register(win, 'CmdOrCtrl+Shift+I', () => {
+            if (remote.getCurrentWindow().isFocused())
+                t.webview.openDevTools()
         });
-        globalShortcut.register('F5', () => {
-            if(remote.getCurrentWindow().isFocused())
+        localShortcut.register(win, 'F5', () => {
+            if (remote.getCurrentWindow().isFocused())
                 t.webview.reload()
         });
-        globalShortcut.register('CmdOrCtrl+R', () => {
-            if(remote.getCurrentWindow().isFocused())
+        localShortcut.register(win, 'CmdOrCtrl+R', () => {
+            if (remote.getCurrentWindow().isFocused())
                 t.webview.reload()
         });
-        globalShortcut.register('CmdOrCtrl+Shift+R', () => {
-            if(remote.getCurrentWindow().isFocused())
+        localShortcut.register(win, 'CmdOrCtrl+Shift+R', () => {
+            if (remote.getCurrentWindow().isFocused())
                 t.webview.reloadIgnoringCache()
         });
-        globalShortcut.register('Shift+F5', () => {
-            if(remote.getCurrentWindow().isFocused())
+        localShortcut.register(win, 'Shift+F5', () => {
+            if (remote.getCurrentWindow().isFocused())
                 t.webview.reloadIgnoringCache()
         });
-        globalShortcut.register('Alt+Home', () => {
-            if(remote.getCurrentWindow().isFocused())
+        localShortcut.register(win, 'Alt+Home', () => {
+            if (remote.getCurrentWindow().isFocused())
                 t.webview.loadURL(settings.get("settings.homePage", "kt-browser://newtab"))
         });
 
-        globalShortcut.register('CmdOrCtrl+P', () => {
-            if(remote.getCurrentWindow().isFocused())
+        localShortcut.register(win, 'CmdOrCtrl+P', () => {
+            if (remote.getCurrentWindow().isFocused())
                 t.webview.print({
                     silent: false,
                     printBackground: false
                 })
         });
-        
-        $(window).resize(function() {
+
+        $(window).resize(function () {
             t.fitToParent()
         })
 
-        t.updateURLBarIcon = function() {
+        t.updateURLBarIcon = function () {
             if (!settings.tab.instance.bar || typeof settings.tab.instance.bar.find !== 'function') return;
 
             settings.tab.instance.bar.rdBtn.show()
             settings.tab.instance.bar.searchInput.css("width", "calc(100% - 120px)")
             var currentUrl = t.webview.getURL();
-            
-            if(currentUrl.startsWith("http://")) {
+
+            if (currentUrl.startsWith("http://")) {
                 settings.tab.instance.bar.searchIcon.html('http')
             }
-            if(currentUrl.startsWith("https://")) {
+            if (currentUrl.startsWith("https://")) {
                 settings.tab.instance.bar.searchIcon.html('https')
             }
-            if(currentUrl.startsWith("kt-browser://")) {
+            if (currentUrl.startsWith("kt-browser://")) {
                 settings.tab.instance.bar.searchIcon.html('public')
                 settings.tab.instance.bar.rdBtn.hide()
                 settings.tab.instance.bar.searchInput.css("width", "calc(100% - 88px)")
             }
-            if(currentUrl.startsWith("kt-browser://newtab")) {
+            if (currentUrl.startsWith("kt-browser://newtab")) {
                 settings.tab.instance.bar.searchIcon.html('search')
             }
-            if(currentUrl.startsWith("file://")) {
+            if (currentUrl.startsWith("file://")) {
                 settings.tab.instance.bar.searchIcon.html('storage')
                 settings.tab.instance.bar.rdBtn.hide()
                 settings.tab.instance.bar.searchInput.css("width", "calc(100% - 88px)")
             }
-            if(currentUrl.includes(`reader/index.html?url=`)) {
+            if (currentUrl.includes(`reader/index.html?url=`)) {
                 settings.tab.instance.bar.searchIcon.html('remove_red_eye')
                 settings.tab.instance.bar.rdBtn.hide()
                 settings.tab.instance.bar.searchInput.css("width", "calc(100% - 88px)")
             }
-            if(currentUrl.startsWith("data:text")) {
+            if (currentUrl.startsWith("data:text")) {
                 settings.tab.instance.bar.searchIcon.html('description')
                 settings.tab.instance.bar.rdBtn.hide()
                 settings.tab.instance.bar.searchInput.css("width", "calc(100% - 88px)")
             }
-            if(currentUrl.startsWith("data:image")) {
+            if (currentUrl.startsWith("data:image")) {
                 settings.tab.instance.bar.searchIcon.html('image')
                 settings.tab.instance.bar.rdBtn.hide()
                 settings.tab.instance.bar.searchInput.css("width", "calc(100% - 88px)")
             }
-            if(t.isPrivacy) {
+            if (t.isPrivacy) {
                 settings.tab.instance.bar.searchIcon.html('vpn_lock')
             }
         }
 
-        this.webview.addEventListener('ipc-message', function(e) {
-            if(e.channel == 'clicked') {
-                if(settings.tab.instance.bar) settings.tab.instance.bar.suggestions.css('display', 'none')
-                if(settings.tab.instance.menu) settings.tab.instance.menu.hide()
+        this.webview.addEventListener('ipc-message', function (e) {
+            if (e.channel == 'clicked') {
+                if (settings.tab.instance.bar) settings.tab.instance.bar.suggestions.css('display', 'none')
+                if (settings.tab.instance.menu) settings.tab.instance.menu.hide()
             }
-            if(e.channel == 'status') {
-                if(typeof e.args[0] == 'undefined' || !e.args[0] || e.args[0].length === 0 || e.args[0] === "" || !/[^\s]/.test(e.args[0]) || /^\s*$/.test(e.args[0]) || e.args[0].replace(/\s/g, "") === "") {
+            if (e.channel == 'status') {
+                if (typeof e.args[0] == 'undefined' || !e.args[0] || e.args[0].length === 0 || e.args[0] === "" || !/[^\s]/.test(e.args[0]) || /^\s*$/.test(e.args[0]) || e.args[0].replace(/\s/g, "") === "") {
                     settings.tab.instance.status.css("display", "none")
                 } else {
-                    if(e.args[0].length > 71) {
+                    if (e.args[0].length > 71) {
                         settings.tab.instance.status.html(e.args[0].substring(0, 70) + "...")
                     } else {
                         settings.tab.instance.status.html(e.args[0]);
@@ -2916,37 +3065,37 @@ recognizer.onresult = function (event) {
         })
 
         //webview ready event
-        $(t.webview).ready(function() {
-            if(fileToStart != null) {
+        $(t.webview).ready(function () {
+            if (fileToStart != null) {
                 url = fileToStart;
                 fileToStart = null;
             }
 
-            if(settings.url != null || settings.url != "")
+            if (settings.url != null || settings.url != "")
                 t.webview.loadURL(settings.url)
         });
-        
+
         // DOM-READY event
         t.webview.addEventListener('dom-ready', () => {
-             t.fitToParent();
-             
-             // Access getWebContents only here
-             var ses = t.webview.getWebContents().session
-             
-             if (settings.tab.instance.bar && settings.tab.instance.bar.searchInput) {
+            t.fitToParent();
+
+            // Access getWebContents only here
+            var ses = remote.webContents.fromId(t.webview.getWebContentsId()).session
+
+            if (settings.tab.instance.bar && settings.tab.instance.bar.searchInput) {
                 settings.tab.instance.bar.searchInput.focus()
-             }
-             settings.tab.Favicon.css('opacity', "0")
-             settings.tab.Preloader.css('opacity', "0")
-             
-             ses.allowNTLMCredentialsForDomains('*')
-             ses.on('will-download', (event, item, webContents) => {})
+            }
+            settings.tab.Favicon.css('opacity', "0")
+            settings.tab.Preloader.css('opacity', "0")
+
+            ses.allowNTLMCredentialsForDomains('*')
+            ses.on('will-download', (event, item, webContents) => { })
         });
 
         //webview newwindow event
         t.webview.addEventListener('new-window', (e) => {
             const protocol = require('url').parse(e.url).protocol
-            if(protocol === 'http:' || protocol === 'https:') {
+            if (protocol === 'http:' || protocol === 'https:') {
                 var tab = new Tab(),
                     instance = $('#instances').browser({
                         tab: tab,
@@ -2956,29 +3105,29 @@ recognizer.onresult = function (event) {
             }
         });
 
-        t.webview.addEventListener('did-frame-finish-load', function(e) {
+        t.webview.addEventListener('did-frame-finish-load', function (e) {
             const isMainFrame = e.isMainFrame;
 
             settings.tab.Favicon.css('opacity', "1");
             settings.tab.Preloader.css('opacity', "0");
 
-            if(lastUrl != t.webview.getURL()) {
-                if(!t.isPrivacy) {
+            if (lastUrl != t.webview.getURL()) {
+                if (!t.isPrivacy) {
                     t.storage.saveHistory(t.webview.getTitle(), t.webview.getURL())
                 }
                 lastUrl = t.webview.getURL()
             }
-            if(!t.webview.getURL().startsWith("kt-browser://newtab") && t.webview.getURL() != "about:blank" && !t.webview.getURL().includes(`reader/index.html?url=`)) {
+            if (!t.webview.getURL().startsWith("kt-browser://newtab") && t.webview.getURL() != "about:blank" && !t.webview.getURL().includes(`reader/index.html?url=`)) {
                 if (settings.tab.instance.bar) settings.tab.instance.bar.searchInput.val(t.webview.getURL());
             }
 
             if (settings.tab.instance.bar) {
-                if(t.webview.canGoBack()) {
+                if (t.webview.canGoBack()) {
                     settings.tab.instance.bar.backBtn.enabled = true
                 } else {
                     settings.tab.instance.bar.backBtn.enabled = false
                 }
-                if(t.webview.canGoForward()) {
+                if (t.webview.canGoForward()) {
                     settings.tab.instance.bar.forwardBtn.enabled = true
                 } else {
                     settings.tab.instance.bar.forwardBtn.enabled = false
@@ -2987,14 +3136,14 @@ recognizer.onresult = function (event) {
 
             t.updateURLBarIcon()
 
-            if(isMainFrame) {
+            if (isMainFrame) {
                 t.webview.executeJavaScript('stylishMenu()', false);
                 t.webview.executeJavaScript('isNightMode()', true).then(result => {
-                    if(result == true) {
+                    if (result == true) {
                         t.webview.executeJavaScript('NightMode()', false);
                     }
-                }).catch(()=>{});
-                
+                }).catch(() => { });
+
                 // Ad removal scripts
                 t.webview.executeJavaScript('for(var list=document.getElementsByClassName("banner300250-L"),i=list.length-1;i>=0;i--)list[i]&&list[i].parentElement&&list[i].parentElement.removeChild(list[i]);', true)
                 t.webview.executeJavaScript('for(var list=document.getElementsByClassName("div-banner300250"),i=list.length-1;i>=0;i--)list[i]&&list[i].parentElement&&list[i].parentElement.removeChild(list[i]);', true)
@@ -3002,84 +3151,123 @@ recognizer.onresult = function (event) {
                 t.webview.executeJavaScript('for(var list=document.getElementsByClassName("aCenter padB2 banner-position"),i=list.length-1;i>=0;i--)list[i]&&list[i].parentElement&&list[i].parentElement.removeChild(list[i]);', true)
                 t.webview.executeJavaScript('for(var list=document.getElementsByClassName("ad-div mastad"),i=list.length-1;i>=0;i--)list[i]&&list[i].parentElement&&list[i].parentElement.removeChild(list[i]);', true)
             }
-            
+
             t.webview.executeJavaScript('try { function a() {return $(document.body).css("background-color")} a() } catch(err) {}', true).then(result => {
-                if(result !== null) {
-                    if((result.replace(/^.*,(.+)\)/, '$1') == 0)) {
+                if (result !== null) {
+                    if ((result.replace(/^.*,(.+)\)/, '$1') == 0)) {
                         t.webview.executeJavaScript('try {$(document.body).css("background-color", "#fff")} catch(err) {}', true)
                     }
                 }
-            }).catch(()=>{});
+            }).catch(() => { });
 
             t.webview.executeJavaScript('isMacRender()', true).then(result => {
-                if(result == true) {
+                if (result == true) {
                     t.webview.executeJavaScript('MacRender()', false);
                 }
-            }).catch(()=>{});
+            }).catch(() => { });
+            /*
+            if(isMainFrame && getSettings("settings.colorByPage", true)) {
+                var colors = new Colors(t.webview);
+                colors.getColor(function (data) {
+                    if (settings.tab.Color != data.background) {
+                        settings.tab.Color = data.background;
+                        if (settings.tab.selected) {
+                        // This part is complex because it modifies the main window.
+                        // You might need to use IPC to send the color to the main renderer process.
+                        // For now, let's assume the logic inside browser.js can be triggered from here.
+                        remote.getCurrentWindow().webContents.executeJavaScript(`
+                            var tab = tabCollection.find(t => t.selected);
+                            if (tab) {
+                                tab.Color = "${data.background}";
+                                setColor("${data.background}");
+                                updateColor();
+                            }
+                        `);
+                        }
+                    }
+                });
+            }*/
         });
-        
-        t.webview.addEventListener('did-fail-load', function(e) {
+
+        t.webview.addEventListener('did-fail-load', function (e) {
             let errorCode = e.errorCode
             let errorDescription = e.errorDescription
 
             let dir = __dirname
-            if(!errorCode == 0)
+            if (!errorCode == 0)
                 settings.tab.instance.status.html(errorDescription + ": " + errorCode);
             settings.tab.instance.status.css("display", "inline")
         })
 
-        t.webview.addEventListener('leave-html-full-screen', function() {
+        t.webview.addEventListener('leave-html-full-screen', function () {
             t.fitToParent()
         });
-        t.webview.addEventListener('enter-html-full-screen', function() {
+        t.webview.addEventListener('enter-html-full-screen', function () {
             t.fitToParent()
         });
 
-        t.webview.addEventListener('plugin-crashed', function(e) {
+        t.webview.addEventListener('plugin-crashed', function (e) {
             remote.getCurrentWindow().webContents.executeJavaScript("$('.maindiv').msgBox({title:'" + "Plugin Error" + "',message:'" + "Plugin " + e.name + " is not responding." + "',buttons:[{text:'OK',callback:function(){$('p').fadeIn()}}],blend:!0});")
         });
-        t.webview.addEventListener('did-start-loading', function() {
-            if(settings.tab.instance.bar) settings.tab.instance.bar.suggestions.css('display', 'none');
+        t.webview.addEventListener('did-start-loading', function () {
+            if (settings.tab.instance.bar) settings.tab.instance.bar.suggestions.css('display', 'none');
             settings.tab.Favicon.css('opacity', "0");
             settings.tab.Preloader.css('opacity', "1");
-            t.webview.executeJavaScript('stylishMenu()', false).catch(()=>{});
+            t.webview.executeJavaScript('stylishMenu()', false).catch(() => { });
         });
-        t.webview.addEventListener('page-title-updated', function(e) {
+        t.webview.addEventListener('page-title-updated', function (e) {
             settings.tab.Title.html("<p style='display: inline; width:50%;'>" + "&nbsp;&nbsp;" + e.title + "</p>");
-            if(lastUrl != t.webview.getURL()) {
+            if (lastUrl != t.webview.getURL()) {
                 t.storage.saveHistory(t.webview.getTitle(), t.webview.getURL())
                 lastUrl = t.webview.getURL()
             }
-            if(!t.webview.getURL().startsWith("kt-browser://newtab") && t.webview.getURL() != "about:blank" && !t.webview.getURL().includes(`reader/index.html?url=`)) {
-                if(settings.tab.instance.bar) settings.tab.instance.bar.searchInput.val(t.webview.getURL());
+            if (!t.webview.getURL().startsWith("kt-browser://newtab") && t.webview.getURL() != "about:blank" && !t.webview.getURL().includes(`reader/index.html?url=`)) {
+                if (settings.tab.instance.bar) settings.tab.instance.bar.searchInput.val(t.webview.getURL());
             }
         });
-        t.webview.addEventListener('load-commit', function(e) {
-            if(e.url.length > 65 && !e.url.startsWith("about:")) {
+        t.webview.addEventListener('load-commit', function (e) {
+            if (e.url.length > 65 && !e.url.startsWith("about:")) {
                 settings.tab.instance.status.html("Loading: " + e.url.substring(0, 64) + "...")
             } else {
                 settings.tab.instance.status.html("Loading: " + e.url + "...")
             }
             settings.tab.instance.status.css("display", "inline")
-            if(settings.tab.instance.bar) settings.tab.instance.bar.suggestions.css('display', 'none');
-            if(settingmng.getSync("settings.blockUnsafeWeb")) {
-                if(!e.url.startsWith("kt-browser://") && !e.url.startsWith("about:") && !e.url.startsWith("chrome://") && !e.url.startsWith("file://") && e.isMainFrame) {
-                    request('http://api.openfpt.vn/cyradar?api_key=' + openfpt_api_key + '&url=' + e.url, function(error, response, body) {
+            if (settings.tab.instance.bar) settings.tab.instance.bar.suggestions.css('display', 'none');
+            if (settingmng.getSync("settings.blockUnsafeWeb")) {
+                if (!e.url.startsWith("kt-browser://") && !e.url.startsWith("about:") && !e.url.startsWith("chrome://") && !e.url.startsWith("file://") && e.isMainFrame) {
+                    request('http://api.openfpt.vn/cyradar?api_key=' + openfpt_api_key + '&url=' + e.url, function (error, response, body) {
                         try {
-                            if(JSON.parse(body).conclusion != "safe") {
+                            if (JSON.parse(body).conclusion != "safe") {
                                 t.webview.loadURL("")
                             }
-                        } catch(err) {}
+                        } catch (err) { }
                     });
                 }
             }
         });
 
-        t.webview.addEventListener('page-favicon-updated', function(e) {
-            if(e.favicons && e.favicons.length > 0) {
-                settings.tab.Favicon.html("<div class='favicon' style='background-image: url(\"" + e.favicons[0] + "\");'></div>");
+        t.webview.addEventListener('page-favicon-updated', function (e) {
+            if (e.favicons && e.favicons.length > 0) {
+                var iconUrl = e.favicons[0];
+                
+                // 1. Update the UI Icon
+                settings.tab.Favicon.html("<div class='favicon' style='background-image: url(\"" + iconUrl + "\");'></div>");
                 settings.tab.Favicon.css('opacity', "1");
                 settings.tab.Preloader.css('opacity', "0");
+
+                // 2. Calculate Color from Favicon
+                if (require('electron-settings').getSync("settings.colorByPage")) {
+                    getDominantColor(iconUrl, function(hexColor) {
+                        // Store this color in the tab object for later use
+                        settings.tab.FaviconColor = hexColor;
+                        
+                        // Trigger the main color update logic (which will decide Meta vs Favicon)
+                        // We'll define 'updateTabColor' in browser.js next
+                        if (typeof t.updateTabColorReference === 'function') {
+                            t.updateTabColorReference();
+                        }
+                    });
+                }
             }
         });
 
@@ -3658,82 +3846,52 @@ recognizer.onresult = function (event) {
 
 ### js/components/colors.js
 ```js
+// js/components/colors.js
+
 class Colors {
     constructor(webview) {
-        this.webview = webview
+        this.webview = webview;
     }
 
     getForegroundColor(color) {
-        var brightness = colorBrightness(color)
+        var brightness = colorBrightness(color);
         if (brightness < 150) {
-            return 'white'
+            return 'white';
         } else {
-            return 'black'
+            return 'black';
         }
     }
 
-    getColorFromTop(callback = null) {
-        var t = this
-        if (typeof (this.webview) !== "undefined" && this.webview != null && this.webview.getWebContents() != null) {
-            t.webview.capturePage({
-                x: 1,
-                y: 1,
-                width: 2,
-                height: 2
-            }, function (image) {
-                require("get-pixels")(image.toDataURL(), function (err, pixels) {
-                    if (err) {
-                        return
-                    }
-                    var color = rgbToHex(pixels.data[0], pixels.data[1], pixels.data[2])
-                    if (pixels.data[3] == 0) {
-                        color = "#fff"
-                    }
-                    if (typeof (callback) === 'function') {
-                        callback({
-                            foreground: t.getForegroundColor(color),
-                            background: color
-                        })
-                    }
-                })
-            });
-        }
-    }
-    getColorFromSource(regexp, result, callback = null) {
-        var t = this
-        var regex = result.match(regexp).toString();
-        var color = regex.match(/content="(.*?)"/)[1];
-        if (typeof (callback) === 'function') {
-            callback({
-                foreground: t.getForegroundColor(color),
-                background: color
-            })
-        }
-    }
-    getColor(callback = null) {
-        var t = this
-        if (this.webview != null && this.webview.getWebContents() != null) {
-            t.webview.executeJavaScript("function s() {var markup = document.documentElement.innerHTML; return markup} s();", false, function (result) {
-                var regexp = /<meta name='?.theme-color'?.*>/;
-                if (regexp.test(result)) {
-                    if (typeof (callback) === 'function') {
-                        t.getColorFromSource(regexp, result, function (color) {
-                            callback({
-                                foreground: color.foreground,
-                                background: color.background
-                            })
-                        })
-                    }
+    // New logic: Try Meta, Fallback to 'fallbackColor' (Favicon)
+    getColor(fallbackColor, callback = null) {
+        var t = this;
+        if (this.webview != null) {
+            // 1. Try to get <meta name="theme-color">
+            t.webview.executeJavaScript("document.querySelector('meta[name=\"theme-color\"]')?.getAttribute('content')")
+            .then(function (result) {
+                var finalColor;
+
+                if (result && result !== "") {
+                    // Meta tag found! Use it.
+                    finalColor = result;
                 } else {
-                    if (typeof (callback) === 'function') {
-                        t.getColorFromTop(function (color) {
-                            callback({
-                                foreground: color.foreground,
-                                background: color.background
-                            })
-                        })
+                    // No meta tag. Use the Favicon color (or white if that failed too)
+                    finalColor = fallbackColor || "#ffffff";
+                }
 
-                    }
+                if (typeof (callback) === 'function') {
+                    callback({
+                        foreground: t.getForegroundColor(finalColor),
+                        background: finalColor
+                    });
+                }
+            }).catch(err => {
+                // If script fails (e.g. PDF), fallback to favicon
+                if (typeof (callback) === 'function') {
+                    callback({
+                        foreground: t.getForegroundColor(fallbackColor || "#ffffff"),
+                        background: fallbackColor || "#ffffff"
+                    });
                 }
             });
         }
@@ -4168,7 +4326,28 @@ class Colors {
             t.bar = bar.bar({
                 tab: settings.tab
             })
-            
+            const updateTabColor = () => {
+                if (settings.tab.selected) {
+                    // PASS settings.tab.FaviconColor as the fallback!
+                    t.colors.getColor(settings.tab.FaviconColor, function (data) {
+                        
+                        if (settings.tab.Color != data.background) {
+                            settings.tab.Color = data.background;
+                            settings.tab.Tab.css('background-color', data.background);
+                            
+                            t.webview.webview.executeJavaScript('setTitleBarColor("' + shadeColor2(data.background, -0.2) + '")')
+                                .catch(() => {});
+                            
+                            t.bar.css('background-color', data.background);
+                            changeForeground(data.foreground, data.foreground == 'white' ? '#fff' : '#444');
+                        }
+                    });
+                }
+            };
+            t.webview.updateTabColorReference = updateTabColor;
+            t.webview.webview.addEventListener('did-stop-loading', updateTabColor);
+            t.webview.webview.addEventListener('did-navigate-in-page', updateTabColor);
+            setInterval(updateTabColor, 3000);
             // RE-CALL LAYOUT: Now that t.bar is initialized, let webview fix layout
             // The fitToParent function is attached to the returned jQuery object in webview.js
             // Since t.webview is that object, we can call it.
@@ -4178,6 +4357,7 @@ class Colors {
 
             if (getSettings("settings.colorByPage", true)) {
                 t.colors = new Colors(t.webview.webview)
+                /*
                 setInterval(function () {
                     if (settings.tab.selected) {
                         t.colors.getColor(function (data) {
@@ -4190,7 +4370,7 @@ class Colors {
                             }
                         })
                     }
-                }, 200)
+                }, 200)*/
             }
 
             function changeForeground(color, ripple) {
@@ -4334,6 +4514,9 @@ function isInArray(value, array) {
 }
 
 var jsonObj = getHistoryData()
+if (!jsonObj || !jsonObj.history) {
+    jsonObj = { history: [] };
+}
 var dates = []
 var cards = []
 var items = []

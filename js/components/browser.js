@@ -30,7 +30,28 @@
             t.bar = bar.bar({
                 tab: settings.tab
             })
-            
+            const updateTabColor = () => {
+                if (settings.tab.selected) {
+                    // PASS settings.tab.FaviconColor as the fallback!
+                    t.colors.getColor(settings.tab.FaviconColor, function (data) {
+                        
+                        if (settings.tab.Color != data.background) {
+                            settings.tab.Color = data.background;
+                            settings.tab.Tab.css('background-color', data.background);
+                            
+                            t.webview.webview.executeJavaScript('setTitleBarColor("' + shadeColor2(data.background, -0.2) + '")')
+                                .catch(() => {});
+                            
+                            t.bar.css('background-color', data.background);
+                            changeForeground(data.foreground, data.foreground == 'white' ? '#fff' : '#444');
+                        }
+                    });
+                }
+            };
+            t.webview.updateTabColorReference = updateTabColor;
+            t.webview.webview.addEventListener('did-stop-loading', updateTabColor);
+            t.webview.webview.addEventListener('did-navigate-in-page', updateTabColor);
+            setInterval(updateTabColor, 3000);
             // RE-CALL LAYOUT: Now that t.bar is initialized, let webview fix layout
             // The fitToParent function is attached to the returned jQuery object in webview.js
             // Since t.webview is that object, we can call it.

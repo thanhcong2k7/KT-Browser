@@ -1,6 +1,8 @@
 (function ($) {
     const remote = require('@electron/remote');
     const { globalShortcut } = remote;
+    const localShortcut = require('electron-localshortcut');
+    const win = remote.getCurrentWindow();
 
     $.fn.webview = function (params) {
         var request = require('request');
@@ -28,7 +30,7 @@
         }
 
         t.isPrivacy = false
-        t.webview = $('<webview class="webview" preload="js/extensions/preload.js" webpreferences="' + pref + '" useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36 KT-Browser/7.0.1" autosize="on" src="about:blank" plugins>').appendTo($(this))[0]
+        t.webview = $('<webview class="webview" preload="js/extensions/preload.js" webpreferences="' + pref + '" useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 KT-Browser/7.0.1" autosize="on" src="about:blank" plugins>').appendTo($(this))[0]
         t.storage = new Storage()
         t.string = "Siema"
 
@@ -85,36 +87,36 @@
 
         t.fitToParent()
 
-        globalShortcut.register('F12', () => {
+        localShortcut.register(win, 'F12', () => {
             if (remote.getCurrentWindow().isFocused())
-                t.webview.inspectElement(0, 0)
+                t.webview.openDevTools()
         });
-        globalShortcut.register('CmdOrCtrl+Shift+I', () => {
+        localShortcut.register(win, 'CmdOrCtrl+Shift+I', () => {
             if (remote.getCurrentWindow().isFocused())
-                t.webview.inspectElement(0, 0)
+                t.webview.openDevTools()
         });
-        globalShortcut.register('F5', () => {
-            if (remote.getCurrentWindow().isFocused())
-                t.webview.reload()
-        });
-        globalShortcut.register('CmdOrCtrl+R', () => {
+        localShortcut.register(win, 'F5', () => {
             if (remote.getCurrentWindow().isFocused())
                 t.webview.reload()
         });
-        globalShortcut.register('CmdOrCtrl+Shift+R', () => {
+        localShortcut.register(win, 'CmdOrCtrl+R', () => {
+            if (remote.getCurrentWindow().isFocused())
+                t.webview.reload()
+        });
+        localShortcut.register(win, 'CmdOrCtrl+Shift+R', () => {
             if (remote.getCurrentWindow().isFocused())
                 t.webview.reloadIgnoringCache()
         });
-        globalShortcut.register('Shift+F5', () => {
+        localShortcut.register(win, 'Shift+F5', () => {
             if (remote.getCurrentWindow().isFocused())
                 t.webview.reloadIgnoringCache()
         });
-        globalShortcut.register('Alt+Home', () => {
+        localShortcut.register(win, 'Alt+Home', () => {
             if (remote.getCurrentWindow().isFocused())
                 t.webview.loadURL(settings.get("settings.homePage", "kt-browser://newtab"))
         });
 
-        globalShortcut.register('CmdOrCtrl+P', () => {
+        localShortcut.register(win, 'CmdOrCtrl+P', () => {
             if (remote.getCurrentWindow().isFocused())
                 t.webview.print({
                     silent: false,
@@ -207,7 +209,7 @@
             t.fitToParent();
 
             // Access getWebContents only here
-            var ses = t.webview.getWebContents().session
+            var ses = remote.webContents.fromId(t.webview.getWebContentsId()).session
 
             if (settings.tab.instance.bar && settings.tab.instance.bar.searchInput) {
                 settings.tab.instance.bar.searchInput.focus()
@@ -292,7 +294,7 @@
                     t.webview.executeJavaScript('MacRender()', false);
                 }
             }).catch(() => { });
-
+            /*
             if(isMainFrame && getSettings("settings.colorByPage", true)) {
                 var colors = new Colors(t.webview);
                 colors.getColor(function (data) {
@@ -313,7 +315,7 @@
                         }
                     }
                 });
-            }
+            }*/
         });
 
         t.webview.addEventListener('did-fail-load', function (e) {
@@ -375,9 +377,26 @@
 
         t.webview.addEventListener('page-favicon-updated', function (e) {
             if (e.favicons && e.favicons.length > 0) {
-                settings.tab.Favicon.html("<div class='favicon' style='background-image: url(\"" + e.favicons[0] + "\");'></div>");
+                var iconUrl = e.favicons[0];
+                
+                // 1. Update the UI Icon
+                settings.tab.Favicon.html("<div class='favicon' style='background-image: url(\"" + iconUrl + "\");'></div>");
                 settings.tab.Favicon.css('opacity', "1");
                 settings.tab.Preloader.css('opacity', "0");
+
+                // 2. Calculate Color from Favicon
+                if (require('electron-settings').getSync("settings.colorByPage")) {
+                    getDominantColor(iconUrl, function(hexColor) {
+                        // Store this color in the tab object for later use
+                        settings.tab.FaviconColor = hexColor;
+                        
+                        // Trigger the main color update logic (which will decide Meta vs Favicon)
+                        // We'll define 'updateTabColor' in browser.js next
+                        if (typeof t.updateTabColorReference === 'function') {
+                            t.updateTabColorReference();
+                        }
+                    });
+                }
             }
         });
 

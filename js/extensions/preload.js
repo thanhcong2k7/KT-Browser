@@ -20,6 +20,11 @@ global.getHistoryData = function () {
     if (!fs.existsSync(historyPath)) {
         return { history: [] };
     }
+    try {
+        return JSON.parse(fs.readFileSync(historyPath));
+    } catch (e) {
+        return { history: [] };
+    }
 	return JSON.parse(fs.readFileSync(historyPath));
 }
 
@@ -117,11 +122,11 @@ global.MacRender = function () {
 }
 
 document.addEventListener("click", function () {
-	ipcRenderer.sendToHost("clicked");
+	ipcRenderer.sendTo('host', "clicked");
 })
 
 function setStatus(status) {
-	ipcRenderer.sendToHost('status', status);
+	ipcRenderer.sendTo('host','status', status);
 }
 
 global.stylishMenu = function () {

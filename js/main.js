@@ -1,7 +1,9 @@
-(function() {
+(function () {
     const electron = require('electron')
     const remote = require('@electron/remote')
-    
+    const localShortcut = require('electron-localshortcut');
+    const win = remote.getCurrentWindow();
+    localShortcut.unregisterAll(win);
     // CRITICAL FIX: Polyfill electron.remote globally for legacy libs
     if (!electron.remote) {
         electron.remote = remote;
@@ -21,196 +23,205 @@
     var fs = require('fs');
     const settings = require('electron-settings');
     // REPLACEMENT: electron-is-dev is ESM only, use native check
-    const isDev = !app.isPackaged; 
-    
+    const isDev = !app.isPackaged;
+
     var IsThere = require("is-there");
-    
+
     // SAFELY ACCESS STARTARGS
     var startArgs = remote.getGlobal("startArgs");
     var fileToStart = (startArgs && startArgs.data) ? startArgs.data[2] : null;
-    
+
     var historyPath = app.getPath('userData') + '/User Data/History';
     var userdataPath = app.getPath('userData') + '/User Data';
 
     $(document).ready(function () {
-        setInterval(function () {
-            if (colorBrightness($(document.body).css('background-color')) < 150) {
-                for (var i = 0; i < tabCollection.length; i++) {
-                    tabCollection[i].Title.css('color', '#fff')
-                    tabCollection[i].Preloader.attr('color', '#fff')
-                    tabCollection[i].closeBtn.css('color', '#fff')
+        if ($('#tabbar').length > 0) {
+            setInterval(function () {
+                if (colorBrightness($(document.body).css('background-color')) < 150) {
+                    for (var i = 0; i < tabCollection.length; i++) {
+                        tabCollection[i].Title.css('color', '#fff')
+                        tabCollection[i].Preloader.attr('color', '#fff')
+                        tabCollection[i].closeBtn.css('color', '#fff')
+                    }
+                } else {
+                    for (var i = 0; i < tabCollection.length; i++) {
+                        tabCollection[i].Title.css('color', '#444')
+                        tabCollection[i].Preloader.attr('color', '#3F51B5')
+                        tabCollection[i].closeBtn.css('color', '#000')
+                    }
                 }
-            } else {
-                for (var i = 0; i < tabCollection.length; i++) {
-                    tabCollection[i].Title.css('color', '#444')
-                    tabCollection[i].Preloader.attr('color', '#3F51B5')
-                    tabCollection[i].closeBtn.css('color', '#000')
-                }
-            }
-        }, 200);
+            }, 200);
+            window.updateProxySettings();
 
-        var tab = new Tab(),
-            instance = $('#instances').browser({
-                tab: tab,
-                url: settings.getSync("settings.homePage") || "kt-browser://newtab"
-            })
-        addTab(instance, tab);
-
-        globalShortcut.register('CmdOrCtrl+T', () => {
-            if (remote.getCurrentWindow().isFocused())
-                var tab = new Tab(),
-                    instance = $('#instances').browser({
-                        tab: tab,
-                        url: settings.getSync("settings.homePage") || "kt-browser://newtab"
-                    })
+            var tab = new Tab(),
+                instance = $('#instances').browser({
+                    tab: tab,
+                    url: settings.getSync("settings.homePage") || "kt-browser://newtab"
+                })
             addTab(instance, tab);
-        });
-        globalShortcut.register('F11', () => {
-            if (remote.getCurrentWindow().isFullScreen()) {
-                remote.getCurrentWindow().setFullScreen(false);
-            } else {
-                remote.getCurrentWindow().setFullScreen(true);
-            }
-        });
 
-        globalShortcut.register('Esc', () => {
-            if (remote.getCurrentWindow().isFullScreen()) {
-                remote.getCurrentWindow().setFullScreen(false);
-            }
-        });
+            localShortcut.register(win, 'CmdOrCtrl+T', () => {
+                if (remote.getCurrentWindow().isFocused())
+                    var tab = new Tab(),
+                        instance = $('#instances').browser({
+                            tab: tab,
+                            url: settings.getSync("settings.homePage") || "kt-browser://newtab"
+                        })
+                addTab(instance, tab);
+            });
+            localShortcut.register(win, 'F11', () => {
+                if (remote.getCurrentWindow().isFullScreen()) {
+                    remote.getCurrentWindow().setFullScreen(false);
+                } else {
+                    remote.getCurrentWindow().setFullScreen(true);
+                }
+            });
 
-        globalShortcut.register('CmdOrCtrl+W', () => {
-            if (remote.getCurrentWindow().isFocused()) {
-                for (var i = 0; i < tabCollection.length; i++) {
-                    if (tabCollection[i].selected) {
+            localShortcut.register(win, 'Esc', () => {
+                if (remote.getCurrentWindow().isFullScreen()) {
+                    remote.getCurrentWindow().setFullScreen(false);
+                }
+            });
+
+            localShortcut.register(win, 'CmdOrCtrl+W', () => {
+                if (remote.getCurrentWindow().isFocused()) {
+                    for (var i = 0; i < tabCollection.length; i++) {
+                        if (tabCollection[i].selected) {
+                            tabCollection[i].closeBtn.click();
+                        }
+                    }
+                }
+            });
+            localShortcut.register(win, 'CmdOrCtrl+F4', () => {
+                if (remote.getCurrentWindow().isFocused()) {
+                    for (var i = 0; i < tabCollection.length; i++) {
+                        if (tabCollection[i].selected) {
+                            tabCollection[i].closeBtn.click();
+                        }
+                    }
+                }
+            });
+            localShortcut.register(win, 'CmdOrCtrl+Shift+W', () => {
+                if (remote.getCurrentWindow().isFocused()) {
+                    for (var i = 0; i < tabCollection.length; i++) {
                         tabCollection[i].closeBtn.click();
                     }
                 }
-            }
-        });
-        globalShortcut.register('CmdOrCtrl+F4', () => {
-            if (remote.getCurrentWindow().isFocused()) {
-                for (var i = 0; i < tabCollection.length; i++) {
-                    if (tabCollection[i].selected) {
-                        tabCollection[i].closeBtn.click();
+            });
+            localShortcut.register(win, 'CmdOrCtrl+H', () => {
+                if (remote.getCurrentWindow().isFocused())
+                    var tab = new Tab(),
+                        instance = $('#instances').browser({
+                            tab: tab,
+                            url: 'kt-browser://history/'
+                        })
+                addTab(instance, tab);
+            });
+            localShortcut.register(win, 'CmdOrCtrl+T', () => {
+                if (remote.getCurrentWindow().isFocused())
+                    var tab = new Tab(),
+                        instance = $('#instances').browser({
+                            tab: tab,
+                            url: settings.getSync("settings.homePage", "kt-browser://newtab")
+                        })
+                addTab(instance, tab);
+            });
+            localShortcut.register(win, 'CmdOrCtrl+Shift+T', () => {
+                if (remote.getCurrentWindow().isFocused())
+                    Toast_Material({
+                        content: "Not yet complete",
+                        updown: "bottom",
+                        position: "center",
+                        align: "center"
+                    });
+            });
+
+            document.addEventListener("contextmenu", function (e, params) {
+                e.preventDefault();
+                e.stopPropagation();
+                //TODO: can...
+                let node = e.target;
+                while (node) {
+                    if (node.nodeName.match(/^(input|textarea)$/i) || node.isContentEditable) {
+                        const menu = new Menu()
+                        menu.append(new MenuItem({
+                            label: 'Undo',
+                            accelerator: 'CmdOrCtrl+Z',
+                            role: 'undo'
+                        }))
+                        menu.append(new MenuItem({
+                            label: 'Redo',
+                            accelerator: 'CmdOrCtrl+Shift+Z',
+                            role: 'redo'
+                        }))
+                        menu.append(new MenuItem({
+                            type: 'separator'
+                        }))
+                        menu.append(new MenuItem({
+                            label: 'Cut',
+                            accelerator: 'CmdOrCtrl+X',
+                            role: 'cut'
+                        }))
+                        menu.append(new MenuItem({
+                            label: 'Copy',
+                            accelerator: 'CmdOrCtrl+C',
+                            role: 'copy'
+                        }))
+                        menu.append(new MenuItem({
+                            label: 'Paste',
+                            accelerator: 'CmdOrCtrl+V',
+                            role: 'paste'
+                        }))
+                        menu.append(new MenuItem({
+                            type: 'separator'
+                        }))
+                        menu.append(new MenuItem({
+                            label: 'Select All',
+                            accelerator: 'CmdOrCtrl+A',
+                            role: 'selectall'
+                        }))
+
+                        menu.popup(remote.getCurrentWindow())
+                        break;
                     }
+                    node = node.parentNode;
                 }
+            });
+
+            if (settings.getSync('settings.blockads')) {
+                registerFiltering(remote.getCurrentWindow().webContents.session)
             }
-        });
-        globalShortcut.register('CmdOrCtrl+Shift+W', () => {
-            if (remote.getCurrentWindow().isFocused()) {
-                for (var i = 0; i < tabCollection.length; i++) {
-                    tabCollection[i].closeBtn.click();
+            /*
+            setInterval(function () {
+                if (settings.getSync('static.VPN')) {
+                    remote.getCurrentWindow().webContents.session.setProxy({
+                        pacScript: settings.getSync("settings.nvProxy")
+                    }).then(() => { });
+                } else {
+                    remote.getCurrentWindow().webContents.session.setProxy({
+                        pacScript: ""
+                    }).then(() => { });
                 }
-            }
-        });
-        globalShortcut.register('CmdOrCtrl+H', () => {
-            if (remote.getCurrentWindow().isFocused())
-                var tab = new Tab(),
-                    instance = $('#instances').browser({
-                        tab: tab,
-                        url: 'kt-browser://history/'
-                    })
-            addTab(instance, tab);
-        });
-        globalShortcut.register('CmdOrCtrl+T', () => {
-            if (remote.getCurrentWindow().isFocused())
-                var tab = new Tab(),
-                    instance = $('#instances').browser({
-                        tab: tab,
-                        url: settings.getSync("settings.homePage", "kt-browser://newtab")
-                    })
-            addTab(instance, tab);
-        });
-        globalShortcut.register('CmdOrCtrl+Shift+T', () => {
-            if (remote.getCurrentWindow().isFocused())
-                Toast_Material({
-                    content: "Not yet complete",
-                    updown: "bottom",
-                    position: "center",
-                    align: "center"
-                });
-        });
+    
+            }, 1000);
+            */
+            //Disable VPN for now, bug
 
-        document.addEventListener("contextmenu", function (e, params) {
-            e.preventDefault();
-            e.stopPropagation();
-            //TODO: can...
-            let node = e.target;
-            while (node) {
-                if (node.nodeName.match(/^(input|textarea)$/i) || node.isContentEditable) {
-                    const menu = new Menu()
-                    menu.append(new MenuItem({
-                        label: 'Undo',
-                        accelerator: 'CmdOrCtrl+Z',
-                        role: 'undo'
-                    }))
-                    menu.append(new MenuItem({
-                        label: 'Redo',
-                        accelerator: 'CmdOrCtrl+Shift+Z',
-                        role: 'redo'
-                    }))
-                    menu.append(new MenuItem({
-                        type: 'separator'
-                    }))
-                    menu.append(new MenuItem({
-                        label: 'Cut',
-                        accelerator: 'CmdOrCtrl+X',
-                        role: 'cut'
-                    }))
-                    menu.append(new MenuItem({
-                        label: 'Copy',
-                        accelerator: 'CmdOrCtrl+C',
-                        role: 'copy'
-                    }))
-                    menu.append(new MenuItem({
-                        label: 'Paste',
-                        accelerator: 'CmdOrCtrl+V',
-                        role: 'paste'
-                    }))
-                    menu.append(new MenuItem({
-                        type: 'separator'
-                    }))
-                    menu.append(new MenuItem({
-                        label: 'Select All',
-                        accelerator: 'CmdOrCtrl+A',
-                        role: 'selectall'
-                    }))
-
-                    menu.popup(remote.getCurrentWindow())
-                    break;
-                }
-                node = node.parentNode;
-            }
-        });
-
-        if (settings.getSync('settings.blockads')) {
-            registerFiltering(remote.getCurrentWindow().webContents.session)
+            /*
+            //Warning message for alpha version
+            $('.maindiv').msgBox({
+                title: 'Warning',
+                message: 'This is the alpha version of KT Browser 7.0. Keep in mind that this release is not feature-complete yet and there are many bugs and errors to watch out.',
+                buttons: [{
+                    text: 'I understand',
+                    callback: function () {
+                        $('p').fadeIn()
+                    }
+                }],
+                blend: !0
+            });
+            */
         }
-        setInterval(function () {
-            if (settings.getSync('static.VPN')) {
-                remote.getCurrentWindow().webContents.session.setProxy({
-                    pacScript: settings.getSync("settings.nvProxy")
-                }).then(() => { });
-            } else {
-                remote.getCurrentWindow().webContents.session.setProxy({
-                    pacScript: ""
-                }).then(() => { });
-            }
-
-        }, 1000);
-
-        $('.maindiv').msgBox({
-            title: 'Warning',
-            message: 'This is the alpha version of KT Browser 7.0. Keep in mind that this release is not feature-complete yet and there are many bugs and errors to watch out.',
-            buttons: [{
-                text: 'I understand',
-                callback: function () {
-                    $('p').fadeIn()
-                }
-            }],
-            blend: !0
-        });
     })
     window.onresize = function (event) {
         calcSizes(false, false);
@@ -230,13 +241,23 @@
         remote.getCurrentWindow().minimize();
     });
 
-    window.showApp = function(url) {
+    window.showApp = function (url) {
         const BrowserWindow = remote.BrowserWindow;
 
         var mainWindow = new BrowserWindow({
-            title: 'KT Browser Apps',
-            frame: false
+            title: 'Apps - KT Browser',
+            frame: false,
+            width: 600,
+            height: 750,
+            show: false,
+            // ADD THIS BLOCK TO ALL POPUP WINDOWS:
+            webPreferences: {
+                nodeIntegration: true,
+                contextIsolation: false,
+                enableRemoteModule: true // Required since you use remote inside settings.html
+            }
         })
+
 
         if (isDev) {
             mainWindow.webContents.openDevTools()
@@ -245,16 +266,23 @@
         mainWindow.loadURL(url)
     }
 
-    window.showWebApp = function(url) {
+    window.showWebApp = function (url) {
         const BrowserWindow = remote.BrowserWindow;
 
         var mainWindow = new BrowserWindow({
             title: 'KT Browser Apps',
             frame: false,
-            "web-preferences": {
+            width: 600,
+            height: 750,
+            show: false,
+            // ADD THIS BLOCK TO ALL POPUP WINDOWS:
+            webPreferences: {
                 "web-security": false,
                 nodeIntegration: true,
-                allowRunningInsecureContent: true
+                allowRunningInsecureContent: true,
+                nodeIntegration: true,
+                contextIsolation: false,
+                enableRemoteModule: true
             }
         })
 
@@ -265,7 +293,7 @@
         mainWindow.webContents.executeJavaScript("loadPages('" + url + "')")
     }
 
-    window.checkFiles = function() {
+    window.checkFiles = function () {
         if (!IsThere(userdataPath)) {
             fs.mkdirSync(userdataPath, { recursive: true });
         }
@@ -325,7 +353,7 @@
         return settings.getSync('settings.SearchEngine');
     }
 
-    window.setNightMode = function(value) {
+    window.setNightMode = function (value) {
         settings.setSync('static.NightMode', value);
     }
 
@@ -333,11 +361,23 @@
         settings.setSync('static.VPN', value);
     }
 
-    window.getSettings = function(setting, defaultvalue) {
+    window.updateProxySettings = function () {
+        var session = remote.getCurrentWindow().webContents.session;
+        var useVPN = settings.getSync('static.VPN');
+        var proxyScript = settings.getSync("settings.nvProxy");
+
+        session.setProxy({
+            pacScript: useVPN ? proxyScript : ""
+        }).then(() => {
+            console.log("Proxy settings updated. VPN: " + useVPN);
+        }).catch(err => console.error("Failed to set proxy", err));
+    };
+
+    window.getSettings = function (setting, defaultvalue) {
         return settings.getSync(setting, defaultvalue);
     }
 
-    window.updatetextColor = function() {
+    window.updatetextColor = function () {
         if (colorBrightness($(document.body).css('background-color')) < 150) {
             for (var i = 0; i < tabCollection.length; i++) {
                 tabCollection[i].Title.css('color', '#fff')
@@ -353,7 +393,7 @@
         }
     }
 
-    window.updateColor = function() {
+    window.updateColor = function () {
         for (var i = 0; i < tabCollection.length; i++) {
             if (tabCollection[i].selected) {
                 if (tabCollection[i].Color != document.body.style.background) {
@@ -366,7 +406,7 @@
         updatetextColor()
     }
 
-    window.setColor = function(color) {
+    window.setColor = function (color) {
         $(document.body).css('background-color', color)
         if (colorBrightness(color) < 150) {
             $(document.body).find(".windowbutton-close").css('background-image', 'url(img/WindowButtons/close-white.png)')

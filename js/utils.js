@@ -5,6 +5,53 @@ var rippleTime = 400;
 function decode_utf8(s) {
     return unescape(encodeURIComponent(s));
 }
+// js/utils.js
+
+function getDominantColor(imageUrl, callback) {
+    // 1. Fetch the image as a blob to bypass CORS restrictions on Canvas
+    fetch(imageUrl)
+        .then(response => response.blob())
+        .then(blob => {
+            // 2. Create a local Object URL (blob:...)
+            var url = URL.createObjectURL(blob);
+            var img = new Image();
+            
+            img.onload = function() {
+                try {
+                    var canvas = document.createElement('canvas');
+                    var ctx = canvas.getContext('2d');
+                    canvas.width = 1;
+                    canvas.height = 1;
+                    
+                    // 3. Draw 1x1 pixel to get the average color
+                    ctx.drawImage(img, 0, 0, 1, 1);
+                    var p = ctx.getImageData(0, 0, 1, 1).data;
+                    
+                    // Cleanup memory
+                    URL.revokeObjectURL(url);
+                    
+                    // 4. Convert [R, G, B] to Hex String
+                    var hex = "#" + ("000000" + rgbToHex(p[0], p[1], p[2])).slice(-6);
+                    callback(hex);
+                } catch (e) {
+                    console.warn("Color extraction error:", e);
+                    callback("#ffffff");
+                }
+            };
+
+            img.onerror = function() {
+                console.warn("Favicon failed to load for color extraction.");
+                callback("#ffffff");
+            };
+
+            img.src = url;
+        })
+        .catch(err => {
+            // Fallback if fetch fails (e.g. offline)
+            console.warn("Could not fetch favicon for color:", err);
+            callback("#ffffff");
+        });
+}
 
 function shadeColor(color, percent) {
 
