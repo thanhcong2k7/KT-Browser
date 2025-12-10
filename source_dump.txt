@@ -408,6 +408,40 @@ try {
 global.sharedObj = {
     prop1: "siema"
 };
+ipcMain.on('settings-changed', (event, args) => {
+    // Reload configuration in the main window if necessary
+    if (mainWindow && mainWindow.webContents) {
+        
+        // If Appearance/Color changed
+        if (args.key === 'settings.colorByPage') {
+            // Trigger color update logic
+            mainWindow.webContents.executeJavaScript(`
+                if(typeof window.updateColor === 'function') { window.updateColor(); }
+            `);
+        }
+        
+        // If Web Content settings changed (Images/JS)
+        // Note: This usually requires a reload of the webview to take effect
+        if (args.key === 'settings.allowScript' || args.key === 'settings.allowImage') {
+            // You might want to show a toast saying "Reload tab to apply"
+        }
+    }
+});
+
+ipcMain.on('update-proxy-settings', () => {
+    if (mainWindow && mainWindow.webContents) {
+        var session = mainWindow.webContents.session;
+        var useVPN = settings.getSync('static.VPN');
+        var proxyScript = settings.getSync("settings.nvProxy");
+
+        session.setProxy({
+            pacScript: useVPN ? proxyScript : ""
+        }).then(() => {
+            console.log("Proxy hot-swapped. VPN active:", useVPN);
+        }).catch(err => console.error("Proxy update failed:", err));
+    }
+});
+
 ```
 
 ### mdl-jquery-modal-dialog.js
@@ -2901,7 +2935,7 @@ recognizer.onresult = function (event) {
         }
 
         t.isPrivacy = false
-        t.webview = $('<webview class="webview" preload="js/extensions/preload.js" webpreferences="' + pref + '" useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 KT-Browser/7.0.1" autosize="on" src="about:blank" plugins>').appendTo($(this))[0]
+        t.webview = $('<webview class="webview" preload="js/extensions/preload.js" webpreferences="' + pref + '" useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 KT-Browser/8.0.0-alpha" autosize="on" src="about:blank" plugins>').appendTo($(this))[0]
         t.storage = new Storage()
         t.string = "Siema"
 

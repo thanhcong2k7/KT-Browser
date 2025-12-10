@@ -30,7 +30,7 @@
         }
 
         t.isPrivacy = false
-        t.webview = $('<webview class="webview" preload="js/extensions/preload.js" webpreferences="' + pref + '" useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 KT-Browser/7.0.1" autosize="on" src="about:blank" plugins>').appendTo($(this))[0]
+        t.webview = $('<webview class="webview" preload="js/extensions/preload.js" webpreferences="' + pref + '" useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 KT-Browser/8.0.0-alpha" autosize="on" src="about:blank" plugins>').appendTo($(this))[0]
         t.storage = new Storage()
         t.string = "Siema"
 
