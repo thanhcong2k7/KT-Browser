@@ -1,4 +1,4 @@
-(function() {
+(function () {
     // CRITICAL FIX: Ensure electron.remote exists for electron-settings
     const electron = require('electron');
     const remote = require('@electron/remote');
@@ -8,7 +8,7 @@
 
     const settings = require('electron-settings');
     const { Menu, MenuItem } = remote;
-    
+
     // Expose variables to global scope explicitly
     window.tabCollection = [];
     window.tabWidth = 190;
@@ -21,7 +21,7 @@
     window.Foreground = '#444';
     window.borderColor = 'rgba(0,0,0,0.1)';
 
-    window.addTab = function(instance, tab) {
+    window.addTab = function (instance, tab) {
         tab.Tab = $('<div class="tab" id="#tab"></div>').appendTo('#tabbar');
         tab.closeBtn = $("<div class='closeBtn' data-tooltip-text='Close tab (Ctrl + W)' data-tooltip-position='bottom' ><i class='material-icons' style='font-size: 18px;'>close</i></div>").appendTo(tab.Tab);
         tab.Title = $("<div class='tabTitle'>New tab</div>").appendTo(tab.Tab);
@@ -33,11 +33,11 @@
         tab.Preloader = $('<div class="preloader" style="height: 16px;width: 16px;position:absolute; top: 6px; left:6px;" thickness="9" color="#3F51B5"></div>').appendTo(tab.Tab);
         tab.Preloader.preloader()
         tab.selected = false;
-        tab.getColor = function() {
+        tab.getColor = function () {
             return tab.Tab.css('background-color')
         }
 
-        tab.Tab.contextmenu(function(e) {
+        tab.Tab.contextmenu(function (e) {
             const menu = new Menu()
             menu.append(new MenuItem({
                 label: 'New tab',
@@ -71,9 +71,9 @@
             menu.append(new MenuItem({
                 label: 'Pin tab',
                 enabled: false,
-                click() {}
+                click() { }
             }))
-            if(tab.instance.webview.webview.isAudioMuted()) {
+            if (tab.instance.webview.webview.isAudioMuted()) {
                 menu.append(new MenuItem({
                     label: 'Unmute tab',
                     click() {
@@ -104,24 +104,24 @@
 
         $(".closeBtn").tooltip();
 
-        tab.closeBtn.click(function(e) {
+        tab.closeBtn.click(function (e) {
             removeTab(tab);
         });
 
         tab.Tab.draggable({
             containment: "parent",
             axis: 'x',
-            stop: function(event, ui) {
+            stop: function (event, ui) {
                 calcSizes(true, true);
             },
-            drag: function(event, ui) {
-                for(var i = 0; i < tabCollection.length; i++) {
+            drag: function (event, ui) {
+                for (var i = 0; i < tabCollection.length; i++) {
                     tabCollection[i].Tab.css('z-index', 1);
 
                 }
                 tab.Tab.css('z-index', 9999);
                 var overTab = getTabFromMousePoint(tab);
-                if(overTab != null) {
+                if (overTab != null) {
                     var indexTab = tabCollection.indexOf(tab);
                     var indexOverTab = tabCollection.indexOf(overTab);
                     tabCollection[indexTab] = overTab;
@@ -135,7 +135,7 @@
         tabCollection.push(tab);
         selectTab(tab.Tab);
         tab.selected = true;
-        tab.Tab.mousedown(function(e) {
+        tab.Tab.mousedown(function (e) {
             selectTab(tab.Tab);
         });
         calcSizes(false, true);
@@ -147,22 +147,22 @@
         }, {
             duration: 175
         });
-        setInterval(function() {
-            if(tabCollection.indexOf(tab) == 0) {
+        setInterval(function () {
+            if (tabCollection.indexOf(tab) == 0) {
                 tab.Tab.css('border-left', 'none');
             } else {
                 tab.Tab.css('border-left', '1px solid ' + borderColor);
             }
         }, 1)
-        tab.Tab.mouseenter(function() {
+        tab.Tab.mouseenter(function () {
             var color = tab.Color;
 
-            if(color.startsWith('#')) {
+            if (color.startsWith('#')) {
                 color = hexToRgb(tab.Color);
                 var r = color.r;
                 var g = color.g;
                 var b = color.b;
-                if(!tab.selected)
+                if (!tab.selected)
                     tab.Tab.animate({
                         backgroundColor: `rgba(${r}, ${g}, ${b}, 0.5)`
                     }, {
@@ -174,7 +174,7 @@
                 var r = rgb.r
                 var g = rgb.g
                 var b = rgb.b
-                if(!tab.selected)
+                if (!tab.selected)
                     tab.Tab.animate({
                         backgroundColor: `rgba(${r}, ${g}, ${b}, 0.5)`
                     }, {
@@ -183,8 +183,8 @@
                     })
             }
         })
-        tab.Tab.mouseleave(function() {
-            if(!tab.selected)
+        tab.Tab.mouseleave(function () {
+            if (!tab.selected)
                 tab.Tab.animate({
                     backgroundColor: normalColor
                 }, {
@@ -195,94 +195,115 @@
         $(tab).triggerHandler('ready', tab)
     }
 
-    window.removeTab = function(tab) {
-        if (tab.instance.webview.isPrivacy)
-        {
+    window.removeTab = function (tab) {
+        if (tab.instance && tab.instance.webview.isPrivacy) {
+            try {
+                tab.instance.webview.webview.getWebContents().clearHistory();
+                // We use partition for privacy mode ideally, but if shared session:
+                // Be careful not to clear shared cache if not using partitions
+            } catch (e) { console.log("Error clearing privacy data", e); }
+        }
+
+        if (tab.instance.webview.isPrivacy) {
             tab.instance.webview.webview.getWebContents().clearHistory()
-            tab.instance.webview.webview.getWebContents().session.clearCache(function() {console.log('cleaned cache...')})
+            tab.instance.webview.webview.getWebContents().session.clearCache(function () { console.log('cleaned cache...') })
             tab.instance.webview.webview.getWebContents().session.clearStorageData()
             tab.instance.webview.webview.getWebContents().session.flushStorageData()
             console.log('clear data...')
-            tab.instance.webview.webview.getWebContents().session.cookies.flushStore(function() {console.log('cleaned cookies...')})
+            tab.instance.webview.webview.getWebContents().session.cookies.flushStore(function () { console.log('cleaned cookies...') })
         }
-        tab.tabWindow.remove();
-        if(tabCollection.indexOf(tab) - 1 != -1) {
-            selectTab(tabCollection[tabCollection.indexOf(tab) - 1].Tab);
-        } else {
-            if(tabCollection[1] != null)
+        if (tab.tabWindow) tab.tabWindow.remove();
+
+        var index = tabCollection.indexOf(tab);
+
+        // Select logic
+        if (tab.selected && tabCollection.length > 1) {
+            if (index === 0) {
+                // Closing first tab, select the next one
                 selectTab(tabCollection[1].Tab);
+            } else {
+                // Closing other tab, select the previous one
+                selectTab(tabCollection[index - 1].Tab);
+            }
         }
 
-        tabCollection.splice(tabCollection.indexOf(tab), 1);
-        tab.Tab.animate({
-            top: 50
-        }, {
+        // Remove from array
+        tabCollection.splice(index, 1);
+
+        // Animate and Remove Tab Element
+        tab.Tab.animate({ top: 50 }, {
             duration: 175,
-            complete: function() {
+            complete: function () {
                 tab.Tab.remove();
             }
-        })
-        if(tabCollection.length == 0) {
-            if(settings.getSync("settings.closeOnLastTab", true)) {
-                require('@electron/remote').getCurrentWindow().close();
-            }
+        });
 
+        // Close app if no tabs left
+        if (tabCollection.length === 0) {
+            if (settings.getSync("settings.closeOnLastTab", true)) {
+                require('@electron/remote').getCurrentWindow().close();
+            } else {
+                // Optional: Open a new tab instead of closing app
+                $('#addTab').click();
+            }
+        } else {
+            // Recalculate layout
+            calcSizes(true, true);
         }
-        calcSizes(true, true);
     }
 
-    window.getTabFromMousePoint = function(callingTab) {
-        for(var i = 0; i < tabCollection.length; i++) {
-            if(tabCollection[i] != callingTab) {
-                if(contains(tabCollection[i].Tab[0])) {
-                    if(!tabCollection[i].locked)
+    window.getTabFromMousePoint = function (callingTab) {
+        for (var i = 0; i < tabCollection.length; i++) {
+            if (tabCollection[i] != callingTab) {
+                if (contains(tabCollection[i].Tab[0])) {
+                    if (!tabCollection[i].locked)
                         return tabCollection[i];
                 }
             }
         }
     }
 
-    window.changePos = function(callingTab) {
+    window.changePos = function (callingTab) {
         callingTab.locked = true;
         callingTab.Tab.animate({
             left: tabCollection.indexOf(callingTab) * tabCollection[0].Tab.width(),
             easing: 'easeOutQuint'
         }, {
             duration: 200,
-            complete: function() {
+            complete: function () {
                 callingTab.locked = false;
             },
             queue: false
         });
     }
 
-    document.onmousemove = function(e) {
+    document.onmousemove = function (e) {
         cursorX = e.pageX;
         cursorY = e.pageY;
     }
-    
+
     //check if bounds of another tab contains mouse point
-    window.contains = function(tabToCheck) {
+    window.contains = function (tabToCheck) {
         var rect = tabToCheck.getBoundingClientRect();
-        if(cursorX >= rect.left && cursorX <= rect.right) {
+        if (cursorX >= rect.left && cursorX <= rect.right) {
             return true;
         }
         return false;
     }
 
     //responsive tabs
-    window.calcSizes = function(animation, addButtonAnimation) {
+    window.calcSizes = function (animation, addButtonAnimation) {
         var tabCountTemp = 0;
-        for(var i = 0; i < tabCollection.length; i++) {
+        for (var i = 0; i < tabCollection.length; i++) {
             var tabWidthTemp = tabWidth;
-            if(!(($('#tabbar').width() - $('#addTab').width() - 15) / tabCollection.length >= tabWidth)) {
+            if (!(($('#tabbar').width() - $('#addTab').width() - 15) / tabCollection.length >= tabWidth)) {
                 tabWidthTemp = ($('#tabbar').width() - $('#addTab').width() - 15) / tabCollection.length;
             } else {
                 tabWidthTemp = tabWidth;
             }
             tabCollection[i].Tab.css('width', tabWidthTemp);
 
-            if(animation == true) {
+            if (animation == true) {
                 tabCollection[i].Tab.animate({
                     left: tabCountTemp * tabCollection[0].Tab.width()
                 }, {
@@ -300,8 +321,8 @@
             }
             tabCountTemp += 1;
         }
-        if(tabCollection[0] != null) {
-            if(addButtonAnimation == true) {
+        if (tabCollection[0] != null) {
+            if (addButtonAnimation == true) {
                 $('#addTab').animate({
                     left: tabCollection.length * tabCollection[0].Tab.width()
                 }, {
@@ -323,7 +344,7 @@
         }
     }
 
-    $('#addTab').click(function() {
+    $('#addTab').click(function () {
         var tab = new Tab(),
             instance = $('#instances').browser({
                 tab: tab,
@@ -333,7 +354,7 @@
         addTab(instance, tab);
     });
 
-    window.deselect = function(tab) {
+    window.deselect = function (tab) {
         tab.Tab.css('background-color', normalColor)
         tab.tabWindow.css({
             height: 0,
@@ -344,7 +365,7 @@
         tab.Tab.css('height', tabHeight - 1)
         tab.Preloader.attr('color', '#3F51B5')
         tab.selected = false;
-        if(tab.Foreground == "#fff") {
+        if (tab.Foreground == "#fff") {
             tab.closeBtn.css('color', '#000')
             tab.Title.css('color', '#000')
         } else {
@@ -353,7 +374,7 @@
         }
     }
 
-    window.select = function(tab) {
+    window.select = function (tab) {
         tab.Tab.css('background-color', tab.Color);
         var searchInput = tab.instance.bar.searchInput
         tab.tabWindow.css({
@@ -362,15 +383,15 @@
             opacity: 1,
             visibility: 'visible'
         });
-        if(searchInput != null && (searchInput.val() == "" || searchInput.val() == null)) {
+        if (searchInput != null && (searchInput.val() == "" || searchInput.val() == null)) {
             searchInput.focus();
         }
 
-        if(tab.Foreground == '#000') {
+        if (tab.Foreground == '#000') {
             tab.Preloader.attr('color', '#3F51B5')
             tab.Title.css('color', '#444')
             tab.closeBtn.css('color', '#000')
-        } else if(tab.Foreground == '#fff') {
+        } else if (tab.Foreground == '#fff') {
             tab.Title.css('color', '#fff')
             tab.Preloader.attr('color', '#fff')
             tab.closeBtn.css('color', '#fff')
@@ -380,9 +401,9 @@
         tab.selected = true;
     }
 
-    window.selectTab = function(tab) {
-        for(var i = 0; i < tabCollection.length; i++) {
-            if(tabCollection[i].Tab != tab) {
+    window.selectTab = function (tab) {
+        for (var i = 0; i < tabCollection.length; i++) {
+            if (tabCollection[i].Tab != tab) {
                 deselect(tabCollection[i])
             } else {
                 select(tabCollection[i])
@@ -391,5 +412,5 @@
         require('@electron/remote').getCurrentWindow().webContents.executeJavaScript('updateColor()');
     }
 
-    window.Tab = function() {}
+    window.Tab = function () { }
 })();

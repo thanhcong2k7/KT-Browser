@@ -43,7 +43,28 @@
             favIcon = $('<i2 class="material-icons" data-tooltip-text="Bookmark this page" data-tooltip-position="bottom">favorite_border</i2>').appendTo(this.searchBox),
             micIcon = $('<i3 id="micicon" class="material-icons" data-tooltip-text="Search by voice" data-tooltip-position="bottom" style="font-size: 18px;">mic_none</i3>').appendTo(this.micBtn),
             extIcon = $('<i class="material-icons btn-icon" style="font-size: 22px;">more_vert</i>').appendTo(this.extBtn)
+        favIcon.click(function() {
+            var currentUrl = webview.getURL();
+            var currentTitle = webview.getTitle();
 
+            // Visual feedback: Change icon to filled star
+            $(this).text("favorite"); 
+
+            // Save and Refresh
+            // We access the storage instance from the active tab's webview wrapper
+            // t.webview is available in this scope from bar.js initialization
+            if (t.webview && t.webview.storage) {
+                t.webview.storage.saveBookmark(currentTitle, currentUrl, function() {
+                    console.log("Bookmark saved!");
+                    
+                    // Trigger the UI update on the browser instance
+                    // settings.tab.instance refers to the Browser class instance
+                    if (settings.tab.instance && typeof settings.tab.instance.updateBookmarks === 'function') {
+                        settings.tab.instance.updateBookmarks();
+                    }
+                });
+            }
+        });
         this.searchIcon = $('<i class="material-icons">search</i>').appendTo(this.searchBox)
         $(".rdIcon").tooltip();
         $(".micIcon").tooltip();

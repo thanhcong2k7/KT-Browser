@@ -79,10 +79,10 @@
             <script src="js/utils.js"></script>
             <script>
                 const {
-                    remote,
                     ipcMain,
                     clipboard
                 } = require('electron')
+                const remote = require('@electron/remote');
                 const {
                     Menu,
                     MenuItem,

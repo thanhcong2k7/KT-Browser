@@ -221,3 +221,43 @@
     font-size: 12px;
     font-weight: 100;
 }
+.bookmarks-bar {
+    height: 28px;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+    display: flex; /* Important for alignment */
+    align-items: center;
+    padding: 0 8px;
+    overflow: hidden;
+    white-space: nowrap;
+    display: none; /* Hidden by default */
+}
+
+.bookmark-item {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    margin-right: 4px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #333;
+    max-width: 150px;
+    transition: background-color 0.2s;
+}
+
+.bookmark-item:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+.bm-icon {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+}
+
+.bm-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

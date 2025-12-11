@@ -19,7 +19,7 @@
             t = this,
             lastUrl = ''
 
-        var pref = 'contextIsolation=no, nodeIntegration=yes';
+        var pref = 'contextIsolation=yes, nodeIntegration=no, sandbox=true';
         var settingmng = require('electron-settings')
 
         if (!settingmng.getSync("settings.allowScript")) {
@@ -32,6 +32,45 @@
         t.isPrivacy = false
         t.webview = $('<webview class="webview" preload="js/extensions/preload.js" webpreferences="' + pref + '" useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 KT-Browser/8.0.0-alpha" autosize="on" src="about:blank" plugins>').appendTo($(this))[0]
         t.storage = new Storage()
+        // [FIXED] Status / Click handling from Preload
+        t.webview.addEventListener('ipc-message', function (e) {
+            if (e.channel == 'clicked') {
+                if (settings.tab.instance.bar) settings.tab.instance.bar.suggestions.css('display', 'none')
+                if (settings.tab.instance.menu) settings.tab.instance.menu.hide()
+            }
+            if (e.channel == 'status') {
+                var statusText = e.args[0];
+                var statusEl = settings.tab.instance.status;
+                if (!statusText) {
+                    statusEl.css("display", "none");
+                } else {
+                    if (statusText.length > 70) {
+                        statusEl.html(statusText.substring(0, 70) + "...");
+                    } else {
+                        statusEl.html(statusText);
+                    }
+                    statusEl.css("display", "inline");
+                }
+            }
+        });
+
+        // [ADDED] Handle New Window properly
+        t.webview.addEventListener('new-window', (e) => {
+            const protocol = require('url').parse(e.url).protocol
+            if (protocol === 'http:' || protocol === 'https:' || protocol === 'kt-browser:') {
+                // If standard link, open in new tab
+                var tab = new Tab(),
+                    instance = $('#instances').browser({
+                        tab: tab,
+                        url: e.url
+                    })
+                addTab(instance, tab);
+            } else {
+                // External links (mailto, etc)
+                require('electron').shell.openExternal(e.url);
+            }
+        });
+
         t.string = "Siema"
 
         // Initialize context menu
@@ -51,10 +90,23 @@
         }
 
         t.fitToParent = function () {
+            var headerHeight = 79; // Original offset
+            var hasBookmarks = false;
+            if (settings.tab && settings.tab.instance && settings.tab.instance.tabWindow) {
+                var bmBar = settings.tab.instance.tabWindow.find('.bookmarks-bar');
+                if (bmBar.length > 0 && bmBar.is(':visible')) {
+                    hasBookmarks = true;
+                }
+            }
+
+            // Calculate heights
+            var bookmarkHeight = hasBookmarks ? 28 : 0;
+            var totalTopMargin = 48 + bookmarkHeight;
+
             $(t.webview).css({
                 width: window.innerWidth,
-                height: window.innerHeight - 79,
-                marginTop: '48px'
+                height: window.innerHeight - (headerHeight + bookmarkHeight), // Subtract extra height
+                marginTop: totalTopMargin + 'px' // Push down
             })
 
             setBarDisplay('block');
@@ -150,7 +202,7 @@
                 settings.tab.instance.bar.searchIcon.html('search')
             }
             if (currentUrl.startsWith("file://")) {
-                settings.tab.instance.bar.searchIcon.html('storage')
+                settings.tab.instance.bar.searchIcon.html('folder')
                 settings.tab.instance.bar.rdBtn.hide()
                 settings.tab.instance.bar.searchInput.css("width", "calc(100% - 88px)")
             }
@@ -246,24 +298,24 @@
                 }
                 lastUrl = t.webview.getURL()
             }
-            if (!t.webview.getURL().startsWith("kt-browser://newtab") && t.webview.getURL() != "about:blank" && !t.webview.getURL().includes(`reader/index.html?url=`)) {
+
+            if (!t.webview.getURL().startsWith("kt-browser://newtab")) {
                 if (settings.tab.instance.bar) settings.tab.instance.bar.searchInput.val(t.webview.getURL());
             }
 
+
             if (settings.tab.instance.bar) {
-                if (t.webview.canGoBack()) {
-                    settings.tab.instance.bar.backBtn.enabled = true
-                } else {
-                    settings.tab.instance.bar.backBtn.enabled = false
+                // Check if element exists before setting property
+                if (settings.tab.instance.bar.backBtn) {
+                    // Visual styling for disabled state (css class handling usually better)
+                    settings.tab.instance.bar.backBtn.css('opacity', t.webview.canGoBack() ? 1 : 0.3);
                 }
-                if (t.webview.canGoForward()) {
-                    settings.tab.instance.bar.forwardBtn.enabled = true
-                } else {
-                    settings.tab.instance.bar.forwardBtn.enabled = false
+                if (settings.tab.instance.bar.forwardBtn) {
+                    settings.tab.instance.bar.forwardBtn.css('opacity', t.webview.canGoForward() ? 1 : 0.3);
                 }
             }
 
-            t.updateURLBarIcon()
+            t.updateURLBarIcon();
 
             if (isMainFrame) {
                 t.webview.executeJavaScript('stylishMenu()', false);
@@ -378,7 +430,7 @@
         t.webview.addEventListener('page-favicon-updated', function (e) {
             if (e.favicons && e.favicons.length > 0) {
                 var iconUrl = e.favicons[0];
-                
+
                 // 1. Update the UI Icon
                 settings.tab.Favicon.html("<div class='favicon' style='background-image: url(\"" + iconUrl + "\");'></div>");
                 settings.tab.Favicon.css('opacity', "1");
@@ -386,10 +438,10 @@
 
                 // 2. Calculate Color from Favicon
                 if (require('electron-settings').getSync("settings.colorByPage")) {
-                    getDominantColor(iconUrl, function(hexColor) {
+                    getDominantColor(iconUrl, function (hexColor) {
                         // Store this color in the tab object for later use
                         settings.tab.FaviconColor = hexColor;
-                        
+
                         // Trigger the main color update logic (which will decide Meta vs Favicon)
                         // We'll define 'updateTabColor' in browser.js next
                         if (typeof t.updateTabColorReference === 'function') {

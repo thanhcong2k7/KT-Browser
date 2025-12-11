@@ -158,98 +158,98 @@ this.actionHandler_&&(this.actionElement_.textContent=this.actionText_,this.acti
 const electron = require('electron')
 const protocol = electron.protocol
 const app = electron.app
-const { ipcMain, BrowserWindow } = electron
+const { ipcMain, BrowserWindow, net, shell } = electron
 const path = require('path')
 const fs = require('fs')
 // 'electron-is-dev' is ESM only now. Use !app.isPackaged instead.
-const isDev = !app.isPackaged 
+const isDev = !app.isPackaged
 const settings = require('electron-settings')
 const windowStateKeeper = require('electron-window-state')
 
 // Initialize remote module
-require('@electron/remote/main').initialize() 
+require('@electron/remote/main').initialize()
 
 global.startArgs = {
     data: process.argv
 }
 
 // Ensure User Data folder exists on Windows
-if(process.platform == 'win32') {
+if (process.platform == 'win32') {
     const userDataPath = app.getPath('userData');
-    if(!fs.existsSync(userDataPath)) {
+    if (!fs.existsSync(userDataPath)) {
         fs.mkdirSync(userDataPath, { recursive: true });
     }
 }
 
 // USE getSync / setSync for electron-settings v4+
-if(settings.getSync("static") == null) {
+if (settings.getSync("static") == null) {
     settings.setSync('static', {
         NightMode: false,
         VPN: false
     })
 }
 
-if(settings.getSync('settings.nvProxy') == null) {
+if (settings.getSync('settings.nvProxy') == null) {
     settings.setSync('settings.nvProxy', 'http://kt-browser.com/Singapore.pac');
 }
 
-if(settings.getSync('settings.homePage') == null) {
+if (settings.getSync('settings.homePage') == null) {
     settings.setSync('settings.homePage', 'kt-browser://newtab');
 }
 
-if(settings.getSync('settings.SearchEngine') == null) {
+if (settings.getSync('settings.SearchEngine') == null) {
     settings.setSync('settings.SearchEngine', '1');
 }
 
-if(settings.getSync('settings.colorByPage') == null) {
+if (settings.getSync('settings.colorByPage') == null) {
     settings.setSync('settings.colorByPage', true);
 }
 
-if(settings.getSync('settings.blockUnsafeWeb') == null) {
+if (settings.getSync('settings.blockUnsafeWeb') == null) {
     settings.setSync('settings.blockUnsafeWeb', true);
 }
 
-if(settings.getSync('settings.DNT') == null) {
+if (settings.getSync('settings.DNT') == null) {
     settings.setSync('settings.DNT', true);
 }
 
-if(settings.getSync('settings.allowScript') == null) {
+if (settings.getSync('settings.allowScript') == null) {
     settings.setSync('settings.allowScript', true);
 }
 
-if(settings.getSync('settings.allowImage') == null) {
+if (settings.getSync('settings.allowImage') == null) {
     settings.setSync('settings.allowImage', true);
 }
 
-if(settings.getSync('settings.blockads') == null) {
+if (settings.getSync('settings.blockads') == null) {
     settings.setSync('settings.blockads', true);
 }
 
-if(settings.getSync('settings.labanDic') == null) {
+if (settings.getSync('settings.labanDic') == null) {
     settings.setSync('settings.labanDic', true);
 }
 
-if(settings.getSync('settings.macRender') == null) {
+if (settings.getSync('settings.macRender') == null) {
     settings.setSync('settings.macRender', false);
 }
 
-if(settings.getSync('settings.hardalc') == null) {
+if (settings.getSync('settings.hardalc') == null) {
     settings.setSync('settings.hardalc', true);
 }
 
-if(settings.getSync('settings.closeOnLastTab') == null) {
+if (settings.getSync('settings.closeOnLastTab') == null) {
     settings.setSync('settings.closeOnLastTab', true);
 }
 
-if(settings.getSync('static.NightMode') == null) {
+if (settings.getSync('static.NightMode') == null) {
     settings.setSync('static.NightMode', false);
 }
 
-if(settings.getSync('static.VPN') == null) {
+if (settings.getSync('static.VPN') == null) {
     settings.setSync('static.VPN', false);
 }
 
-if(!settings.getSync("settings.hardalc")) {
+if (!settings.getSync("settings.hardalc")) {
     app.disableHardwareAcceleration();
 }
 
@@ -259,7 +259,14 @@ app.commandLine.appendSwitch('enable-speech-input', '')
 app.commandLine.appendSwitch('enable-fast-unload', '')
 app.commandLine.appendSwitch('smooth-scrolling', 'enabled')
 app.commandLine.appendSwitch('touch-events', 'enabled')
-
+ipcMain.on('clear-browsing-data', (event) => {
+    const session = mainWindow.webContents.session;
+    session.clearCache().then(() => {
+        return session.clearStorageData();
+    }).then(() => {
+        // Optional: Notify renderer
+    });
+});
 process.env.GOOGLE_API_KEY = 'AIzaSyDwr302FpOSkGRpLlUpPThNTDPbXcIn_FM'
 process.env.GOOGLE_DEFAULT_CLIENT_ID = '413772536636.apps.googleusercontent.com'
 process.env.GOOGLE_DEFAULT_CLIENT_SECRET = '0ZChLK6AxeA3Isu96MkwqDR4'
@@ -288,7 +295,7 @@ function createWindow() {
             contextIsolation: false,
             webviewTag: true,
             enableRemoteModule: true,
-            webSecurity: false
+            webSecurity: true
         }
     })
 
@@ -298,37 +305,37 @@ function createWindow() {
     mainWindow.once('ready-to-show', () => {
         mainWindow.fullscreen = false;
     })
-    mainWindow.on('enter-html-full-screen', function() {
+    mainWindow.on('enter-html-full-screen', function () {
         mainWindow.webContents.executeJavaScript('Toast_Material({content:"Press F11 to exit fullscreen",updown:"bottom",position:"center",align:"center"});', true)
         mainWindow.webContents.executeJavaScript("titlebar.style.display='none';", true)
     });
-    mainWindow.on('leave-html-full-screen', function() {
+    mainWindow.on('leave-html-full-screen', function () {
         mainWindow.webContents.executeJavaScript("titlebar.style.display='block';", true)
     });
-    mainWindow.on('enter-full-screen', function() {
-        if(process.platform !== 'linux') {
+    mainWindow.on('enter-full-screen', function () {
+        if (process.platform !== 'linux') {
             mainWindow.webContents.executeJavaScript('Toast_Material({ content : "Press F11 to exit fullscreen", updown:"bottom", position:"center", align:"center" });', true)
         }
         mainWindow.webContents.executeJavaScript("titlebar.style.display='none';", true)
     });
-    mainWindow.on('leave-full-screen', function() {
+    mainWindow.on('leave-full-screen', function () {
         mainWindow.webContents.executeJavaScript("titlebar.style.display='block';", true)
     });
 
     mainWindow.loadURL(`file://${__dirname}/index.html`)
-    if(isDev) {
+    if (isDev) {
         mainWindow.webContents.openDevTools()
     }
 
-    mainWindow.on('closed', function() {
+    mainWindow.on('closed', function () {
         mainWindow = null
     })
     mainWindow.setMenu(null)
-    
+
     mainWindow.webContents.session.on('will-download', (event, item, webContents) => {
         // Fix itemURL reference
         const itemURL = item.getURL();
-        if(item.getMimeType() === 'application/pdf' && itemURL.indexOf('blob:') !== 0) {
+        if (item.getMimeType() === 'application/pdf' && itemURL.indexOf('blob:') !== 0) {
             event.preventDefault()
             // Note: This assumes `Tab` and `addTab` are available in the main process context 
             // or this logic should be moved/ipc used. 
@@ -337,7 +344,7 @@ function createWindow() {
         }
     })
 
-    if(settings.getSync('settings.DNT')) {
+    if (settings.getSync('settings.DNT')) {
         const filter = {
             urls: ["http://*/*", "https://*/*"]
         }
@@ -352,7 +359,7 @@ function createWindow() {
     mainWindowState.manage(mainWindow)
 }
 
-process.on('uncaughtException', function(error) {
+process.on('uncaughtException', function (error) {
     console.error(error);
 })
 
@@ -360,38 +367,90 @@ protocol.registerSchemesAsPrivileged([
     { scheme: 'kt-browser', privileges: { standard: true, secure: true, supportFetchAPI: true } }
 ])
 
-app.on('ready', function() {
+app.on('ready', function () {
     protocol.handle('kt-browser', (request) => {
-        let url = request.url.substring(13); // Strip 'kt-browser://'
-        
-        // 1. Remove query parameters (e.g. ?query=...)
-        url = url.split('?')[0];
+        let urlPath = request.url.substring(13); // Strip 'kt-browser://'
+        urlPath = urlPath.split('?')[0]; // Remove query params
 
-        // 2. Handle Directory/Extension logic
-        if (url.endsWith('/')) {
-            url += 'index.html'; // Default to index.html for folders
-        } else if (!path.extname(url)) {
-            // If no extension (like 'history'), assume .html
-            url += '.html';
+        if (urlPath.endsWith('/')) urlPath += 'index.html';
+        else if (!path.extname(urlPath)) urlPath += '.html';
+
+        // prevent directory traversal
+        const safePrefix = path.normalize(__dirname);
+        const requestedPath = path.normalize(path.join(__dirname, urlPath));
+
+        if (!requestedPath.startsWith(safePrefix)) {
+            return new Response('Access Denied', { status: 403 });
         }
-
-        // 3. Normalize path to prevent directory traversal
-        const filePath = path.normalize(`${__dirname}/${url}`);
-
-        // 4. Serve the file
-        return net.fetch(require('url').pathToFileURL(filePath).toString());
+        return net.fetch(require('url').pathToFileURL(requestedPath).toString());
     });
     createWindow();
+    const openAuxiliaryWindow = (type) => {
+        const parent = BrowserWindow.getFocusedWindow();
+        let url = '';
+        let title = 'KT Browser';
+        let width = 600;
+        let height = 750;
+
+        switch (type) {
+            case 'settings':
+                url = `file://${__dirname}/settings.html`;
+                title = 'Settings';
+                break;
+            case 'downloads':
+                url = `file://${__dirname}/downloads.html`;
+                title = 'Downloads';
+                break;
+            case 'about':
+                url = `file://${__dirname}/about.html`;
+                title = 'About KT Browser';
+                break;
+            case 'new-window':
+                // Launch a completely new main window instance
+                createWindow();
+                return;
+            case 'bookmarks':
+                url = `file://${__dirname}/bookmarks.html`;
+                title = 'Bookmarks';
+                break;
+            default:
+                return;
+        }
+
+        let win = new BrowserWindow({
+            title: title,
+            width: width,
+            height: height,
+            frame: false,
+            parent: parent, // Make it a child of the main window
+            modal: false,   // Set to true if you want to block the main window
+            webPreferences: {
+                nodeIntegration: true,
+                contextIsolation: false,
+                enableRemoteModule: true
+            }
+        });
+        require('@electron/remote/main').enable(win.webContents);
+
+        win.loadURL(url);
+        if (isDev) win.webContents.openDevTools({ mode: 'detach' });
+        win.setMenu(null);
+    };
+
+    // Listen for menu events from Renderer
+    ipcMain.on('open-window', (event, type) => {
+        openAuxiliaryWindow(type);
+    });
 });
 
-app.on('window-all-closed', function() {
-    if(process.platform !== 'darwin') {
+app.on('window-all-closed', function () {
+    if (process.platform !== 'darwin') {
         app.quit()
     }
 })
 
-app.on('activate', function() {
-    if(mainWindow === null) {
+app.on('activate', function () {
+    if (mainWindow === null) {
         createWindow()
     }
 })
@@ -411,7 +470,7 @@ global.sharedObj = {
 ipcMain.on('settings-changed', (event, args) => {
     // Reload configuration in the main window if necessary
     if (mainWindow && mainWindow.webContents) {
-        
+
         // If Appearance/Color changed
         if (args.key === 'settings.colorByPage') {
             // Trigger color update logic
@@ -419,7 +478,7 @@ ipcMain.on('settings-changed', (event, args) => {
                 if(typeof window.updateColor === 'function') { window.updateColor(); }
             `);
         }
-        
+
         // If Web Content settings changed (Images/JS)
         // Note: This usually requires a reload of the webview to take effect
         if (args.key === 'settings.allowScript' || args.key === 'settings.allowImage') {
@@ -803,20 +862,21 @@ function hideDialog(dialog, callback) {
         calcSizes(false, false);
     };
 
-    $('.windowbutton-close').click(function () {
-        remote.getCurrentWindow().close();
+    $(function () {
+        $('.windowbutton-close').click(function () {
+            remote.getCurrentWindow().close();
+        });
+        $('.windowbutton-maximize').click(function () {
+            if (remote.getCurrentWindow().isMaximized()) {
+                remote.getCurrentWindow().unmaximize();
+            } else {
+                remote.getCurrentWindow().maximize();
+            }
+        });
+        $('.windowbutton-minimize').click(function () {
+            remote.getCurrentWindow().minimize();
+        });
     });
-    $('.windowbutton-maximize').click(function () {
-        if (remote.getCurrentWindow().isMaximized()) {
-            remote.getCurrentWindow().unmaximize();
-        } else {
-            remote.getCurrentWindow().maximize();
-        }
-    });
-    $('.windowbutton-minimize').click(function () {
-        remote.getCurrentWindow().minimize();
-    });
-
     window.showApp = function (url) {
         const BrowserWindow = remote.BrowserWindow;
 
@@ -938,15 +998,8 @@ function hideDialog(dialog, callback) {
     }
 
     window.updateProxySettings = function () {
-        var session = remote.getCurrentWindow().webContents.session;
-        var useVPN = settings.getSync('static.VPN');
-        var proxyScript = settings.getSync("settings.nvProxy");
-
-        session.setProxy({
-            pacScript: useVPN ? proxyScript : ""
-        }).then(() => {
-            console.log("Proxy settings updated. VPN: " + useVPN);
-        }).catch(err => console.error("Failed to set proxy", err));
+        ipcRenderer.send('update-proxy-settings');
+        console.log("Requested Proxy Update. VPN: " + settings.getSync('static.VPN'));
     };
 
     window.getSettings = function (setting, defaultvalue) {
@@ -1373,7 +1426,7 @@ global.registerFiltering = function (ses) {
 
 ### js/tabsystem/tabbar.js
 ```js
-(function() {
+(function () {
     // CRITICAL FIX: Ensure electron.remote exists for electron-settings
     const electron = require('electron');
     const remote = require('@electron/remote');
@@ -1383,7 +1436,7 @@ global.registerFiltering = function (ses) {
 
     const settings = require('electron-settings');
     const { Menu, MenuItem } = remote;
-    
+
     // Expose variables to global scope explicitly
     window.tabCollection = [];
     window.tabWidth = 190;
@@ -1396,7 +1449,7 @@ global.registerFiltering = function (ses) {
     window.Foreground = '#444';
     window.borderColor = 'rgba(0,0,0,0.1)';
 
-    window.addTab = function(instance, tab) {
+    window.addTab = function (instance, tab) {
         tab.Tab = $('<div class="tab" id="#tab"></div>').appendTo('#tabbar');
         tab.closeBtn = $("<div class='closeBtn' data-tooltip-text='Close tab (Ctrl + W)' data-tooltip-position='bottom' ><i class='material-icons' style='font-size: 18px;'>close</i></div>").appendTo(tab.Tab);
         tab.Title = $("<div class='tabTitle'>New tab</div>").appendTo(tab.Tab);
@@ -1408,11 +1461,11 @@ global.registerFiltering = function (ses) {
         tab.Preloader = $('<div class="preloader" style="height: 16px;width: 16px;position:absolute; top: 6px; left:6px;" thickness="9" color="#3F51B5"></div>').appendTo(tab.Tab);
         tab.Preloader.preloader()
         tab.selected = false;
-        tab.getColor = function() {
+        tab.getColor = function () {
             return tab.Tab.css('background-color')
         }
 
-        tab.Tab.contextmenu(function(e) {
+        tab.Tab.contextmenu(function (e) {
             const menu = new Menu()
             menu.append(new MenuItem({
                 label: 'New tab',
@@ -1446,9 +1499,9 @@ global.registerFiltering = function (ses) {
             menu.append(new MenuItem({
                 label: 'Pin tab',
                 enabled: false,
-                click() {}
+                click() { }
             }))
-            if(tab.instance.webview.webview.isAudioMuted()) {
+            if (tab.instance.webview.webview.isAudioMuted()) {
                 menu.append(new MenuItem({
                     label: 'Unmute tab',
                     click() {
@@ -1479,24 +1532,24 @@ global.registerFiltering = function (ses) {
 
         $(".closeBtn").tooltip();
 
-        tab.closeBtn.click(function(e) {
+        tab.closeBtn.click(function (e) {
             removeTab(tab);
         });
 
         tab.Tab.draggable({
             containment: "parent",
             axis: 'x',
-            stop: function(event, ui) {
+            stop: function (event, ui) {
                 calcSizes(true, true);
             },
-            drag: function(event, ui) {
-                for(var i = 0; i < tabCollection.length; i++) {
+            drag: function (event, ui) {
+                for (var i = 0; i < tabCollection.length; i++) {
                     tabCollection[i].Tab.css('z-index', 1);
 
                 }
                 tab.Tab.css('z-index', 9999);
                 var overTab = getTabFromMousePoint(tab);
-                if(overTab != null) {
+                if (overTab != null) {
                     var indexTab = tabCollection.indexOf(tab);
                     var indexOverTab = tabCollection.indexOf(overTab);
                     tabCollection[indexTab] = overTab;
@@ -1510,7 +1563,7 @@ global.registerFiltering = function (ses) {
         tabCollection.push(tab);
         selectTab(tab.Tab);
         tab.selected = true;
-        tab.Tab.mousedown(function(e) {
+        tab.Tab.mousedown(function (e) {
             selectTab(tab.Tab);
         });
         calcSizes(false, true);
@@ -1522,22 +1575,22 @@ global.registerFiltering = function (ses) {
         }, {
             duration: 175
         });
-        setInterval(function() {
-            if(tabCollection.indexOf(tab) == 0) {
+        setInterval(function () {
+            if (tabCollection.indexOf(tab) == 0) {
                 tab.Tab.css('border-left', 'none');
             } else {
                 tab.Tab.css('border-left', '1px solid ' + borderColor);
             }
         }, 1)
-        tab.Tab.mouseenter(function() {
+        tab.Tab.mouseenter(function () {
             var color = tab.Color;
 
-            if(color.startsWith('#')) {
+            if (color.startsWith('#')) {
                 color = hexToRgb(tab.Color);
                 var r = color.r;
                 var g = color.g;
                 var b = color.b;
-                if(!tab.selected)
+                if (!tab.selected)
                     tab.Tab.animate({
                         backgroundColor: `rgba(${r}, ${g}, ${b}, 0.5)`
                     }, {
@@ -1549,7 +1602,7 @@ global.registerFiltering = function (ses) {
                 var r = rgb.r
                 var g = rgb.g
                 var b = rgb.b
-                if(!tab.selected)
+                if (!tab.selected)
                     tab.Tab.animate({
                         backgroundColor: `rgba(${r}, ${g}, ${b}, 0.5)`
                     }, {
@@ -1558,8 +1611,8 @@ global.registerFiltering = function (ses) {
                     })
             }
         })
-        tab.Tab.mouseleave(function() {
-            if(!tab.selected)
+        tab.Tab.mouseleave(function () {
+            if (!tab.selected)
                 tab.Tab.animate({
                     backgroundColor: normalColor
                 }, {
@@ -1570,94 +1623,115 @@ global.registerFiltering = function (ses) {
         $(tab).triggerHandler('ready', tab)
     }
 
-    window.removeTab = function(tab) {
-        if (tab.instance.webview.isPrivacy)
-        {
+    window.removeTab = function (tab) {
+        if (tab.instance && tab.instance.webview.isPrivacy) {
+            try {
+                tab.instance.webview.webview.getWebContents().clearHistory();
+                // We use partition for privacy mode ideally, but if shared session:
+                // Be careful not to clear shared cache if not using partitions
+            } catch (e) { console.log("Error clearing privacy data", e); }
+        }
+
+        if (tab.instance.webview.isPrivacy) {
             tab.instance.webview.webview.getWebContents().clearHistory()
-            tab.instance.webview.webview.getWebContents().session.clearCache(function() {console.log('cleaned cache...')})
+            tab.instance.webview.webview.getWebContents().session.clearCache(function () { console.log('cleaned cache...') })
             tab.instance.webview.webview.getWebContents().session.clearStorageData()
             tab.instance.webview.webview.getWebContents().session.flushStorageData()
             console.log('clear data...')
-            tab.instance.webview.webview.getWebContents().session.cookies.flushStore(function() {console.log('cleaned cookies...')})
+            tab.instance.webview.webview.getWebContents().session.cookies.flushStore(function () { console.log('cleaned cookies...') })
         }
-        tab.tabWindow.remove();
-        if(tabCollection.indexOf(tab) - 1 != -1) {
-            selectTab(tabCollection[tabCollection.indexOf(tab) - 1].Tab);
-        } else {
-            if(tabCollection[1] != null)
+        if (tab.tabWindow) tab.tabWindow.remove();
+
+        var index = tabCollection.indexOf(tab);
+
+        // Select logic
+        if (tab.selected && tabCollection.length > 1) {
+            if (index === 0) {
+                // Closing first tab, select the next one
                 selectTab(tabCollection[1].Tab);
+            } else {
+                // Closing other tab, select the previous one
+                selectTab(tabCollection[index - 1].Tab);
+            }
         }
 
-        tabCollection.splice(tabCollection.indexOf(tab), 1);
-        tab.Tab.animate({
-            top: 50
-        }, {
+        // Remove from array
+        tabCollection.splice(index, 1);
+
+        // Animate and Remove Tab Element
+        tab.Tab.animate({ top: 50 }, {
             duration: 175,
-            complete: function() {
+            complete: function () {
                 tab.Tab.remove();
             }
-        })
-        if(tabCollection.length == 0) {
-            if(settings.getSync("settings.closeOnLastTab", true)) {
-                require('@electron/remote').getCurrentWindow().close();
-            }
+        });
 
+        // Close app if no tabs left
+        if (tabCollection.length === 0) {
+            if (settings.getSync("settings.closeOnLastTab", true)) {
+                require('@electron/remote').getCurrentWindow().close();
+            } else {
+                // Optional: Open a new tab instead of closing app
+                $('#addTab').click();
+            }
+        } else {
+            // Recalculate layout
+            calcSizes(true, true);
         }
-        calcSizes(true, true);
     }
 
-    window.getTabFromMousePoint = function(callingTab) {
-        for(var i = 0; i < tabCollection.length; i++) {
-            if(tabCollection[i] != callingTab) {
-                if(contains(tabCollection[i].Tab[0])) {
-                    if(!tabCollection[i].locked)
+    window.getTabFromMousePoint = function (callingTab) {
+        for (var i = 0; i < tabCollection.length; i++) {
+            if (tabCollection[i] != callingTab) {
+                if (contains(tabCollection[i].Tab[0])) {
+                    if (!tabCollection[i].locked)
                         return tabCollection[i];
                 }
             }
         }
     }
 
-    window.changePos = function(callingTab) {
+    window.changePos = function (callingTab) {
         callingTab.locked = true;
         callingTab.Tab.animate({
             left: tabCollection.indexOf(callingTab) * tabCollection[0].Tab.width(),
             easing: 'easeOutQuint'
         }, {
             duration: 200,
-            complete: function() {
+            complete: function () {
                 callingTab.locked = false;
             },
             queue: false
         });
     }
 
-    document.onmousemove = function(e) {
+    document.onmousemove = function (e) {
         cursorX = e.pageX;
         cursorY = e.pageY;
     }
-    
+
     //check if bounds of another tab contains mouse point
-    window.contains = function(tabToCheck) {
+    window.contains = function (tabToCheck) {
         var rect = tabToCheck.getBoundingClientRect();
-        if(cursorX >= rect.left && cursorX <= rect.right) {
+        if (cursorX >= rect.left && cursorX <= rect.right) {
             return true;
         }
         return false;
     }
 
     //responsive tabs
-    window.calcSizes = function(animation, addButtonAnimation) {
+    window.calcSizes = function (animation, addButtonAnimation) {
         var tabCountTemp = 0;
-        for(var i = 0; i < tabCollection.length; i++) {
+        for (var i = 0; i < tabCollection.length; i++) {
             var tabWidthTemp = tabWidth;
-            if(!(($('#tabbar').width() - $('#addTab').width() - 15) / tabCollection.length >= tabWidth)) {
+            if (!(($('#tabbar').width() - $('#addTab').width() - 15) / tabCollection.length >= tabWidth)) {
                 tabWidthTemp = ($('#tabbar').width() - $('#addTab').width() - 15) / tabCollection.length;
             } else {
                 tabWidthTemp = tabWidth;
             }
             tabCollection[i].Tab.css('width', tabWidthTemp);
 
-            if(animation == true) {
+            if (animation == true) {
                 tabCollection[i].Tab.animate({
                     left: tabCountTemp * tabCollection[0].Tab.width()
                 }, {
@@ -1675,8 +1749,8 @@ global.registerFiltering = function (ses) {
             }
             tabCountTemp += 1;
         }
-        if(tabCollection[0] != null) {
-            if(addButtonAnimation == true) {
+        if (tabCollection[0] != null) {
+            if (addButtonAnimation == true) {
                 $('#addTab').animate({
                     left: tabCollection.length * tabCollection[0].Tab.width()
                 }, {
@@ -1698,7 +1772,7 @@ global.registerFiltering = function (ses) {
         }
     }
 
-    $('#addTab').click(function() {
+    $('#addTab').click(function () {
         var tab = new Tab(),
             instance = $('#instances').browser({
                 tab: tab,
@@ -1708,7 +1782,7 @@ global.registerFiltering = function (ses) {
         addTab(instance, tab);
     });
 
-    window.deselect = function(tab) {
+    window.deselect = function (tab) {
         tab.Tab.css('background-color', normalColor)
         tab.tabWindow.css({
             height: 0,
@@ -1719,7 +1793,7 @@ global.registerFiltering = function (ses) {
         tab.Tab.css('height', tabHeight - 1)
         tab.Preloader.attr('color', '#3F51B5')
         tab.selected = false;
-        if(tab.Foreground == "#fff") {
+        if (tab.Foreground == "#fff") {
             tab.closeBtn.css('color', '#000')
             tab.Title.css('color', '#000')
         } else {
@@ -1728,7 +1802,7 @@ global.registerFiltering = function (ses) {
         }
     }
 
-    window.select = function(tab) {
+    window.select = function (tab) {
         tab.Tab.css('background-color', tab.Color);
         var searchInput = tab.instance.bar.searchInput
         tab.tabWindow.css({
@@ -1737,15 +1811,15 @@ global.registerFiltering = function (ses) {
             opacity: 1,
             visibility: 'visible'
         });
-        if(searchInput != null && (searchInput.val() == "" || searchInput.val() == null)) {
+        if (searchInput != null && (searchInput.val() == "" || searchInput.val() == null)) {
             searchInput.focus();
         }
 
-        if(tab.Foreground == '#000') {
+        if (tab.Foreground == '#000') {
             tab.Preloader.attr('color', '#3F51B5')
             tab.Title.css('color', '#444')
             tab.closeBtn.css('color', '#000')
-        } else if(tab.Foreground == '#fff') {
+        } else if (tab.Foreground == '#fff') {
             tab.Title.css('color', '#fff')
             tab.Preloader.attr('color', '#fff')
             tab.closeBtn.css('color', '#fff')
@@ -1755,9 +1829,9 @@ global.registerFiltering = function (ses) {
         tab.selected = true;
     }
 
-    window.selectTab = function(tab) {
-        for(var i = 0; i < tabCollection.length; i++) {
-            if(tabCollection[i].Tab != tab) {
+    window.selectTab = function (tab) {
+        for (var i = 0; i < tabCollection.length; i++) {
+            if (tabCollection[i].Tab != tab) {
                 deselect(tabCollection[i])
             } else {
                 select(tabCollection[i])
@@ -1766,7 +1840,7 @@ global.registerFiltering = function (ses) {
         require('@electron/remote').getCurrentWindow().webContents.executeJavaScript('updateColor()');
     }
 
-    window.Tab = function() {}
+    window.Tab = function () { }
 })();
 ```
 
@@ -2303,20 +2377,19 @@ class Tab {
 const electron = require('electron');
 const remote = require('@electron/remote');
 
-// CRITICAL FIX: Polyfill electron.remote globally for all subsequent requires
-// This fixes 'electron-connect' and 'electron-settings' errors
 if (!electron.remote) {
     electron.remote = remote;
 }
 
-const { ipcRenderer } = electron;
+const { contextBridge, ipcRenderer } = electron;
 const { app } = remote;
 const settings = require('electron-settings');
 const fs = require('fs');
 
 var window = remote.getCurrentWindow();
-var historyPath = app.getPath('userData') + '/User Data/History';
 var userdataPath = app.getPath('userData') + '/User Data';
+var historyPath = userdataPath + '/History';
+var bookmarkPath = userdataPath + '/Bookmarks';
 
 global.getHistoryData = function () {
     if (!fs.existsSync(historyPath)) {
@@ -2422,6 +2495,45 @@ global.MacRender = function () {
 		}
 	}
 }
+global.getBookmarksData = function () {
+    // Ensure the path matches where storage.js saves it
+    if (!fs.existsSync(bookmarkPath)) {
+        return { bookmark: [] };
+    }
+    try {
+        return JSON.parse(fs.readFileSync(bookmarkPath));
+    } catch (e) {
+        return { bookmark: [] };
+    }
+};
+
+contextBridge.exposeInMainWorld('ktBrowserAPI', {
+    // Check if full screen
+    isFullScreen: () => ipcRenderer.sendSync('get-fullscreen'),
+    
+    // Request full screen toggle
+    setFullScreen: (flag) => ipcRenderer.send('set-fullscreen', flag),
+    
+    // Check night mode preference
+    isNightMode: () => ipcRenderer.sendSync('get-night-mode'),
+    
+    // Helper for reader view to get content
+    getReaderScore: () => {
+        var paragraphs = document.querySelectorAll('p');
+        var tl = 0;
+        if (!paragraphs) return 0;
+        for (var i = 0; i < paragraphs.length; i++) {
+            tl += Math.max(paragraphs[i].textContent.length - 100, -30);
+        }
+        return tl;
+    },
+
+    // Notify host about status (link hover)
+    setStatus: (status) => ipcRenderer.sendToHost('status', status),
+    
+    // Notify host about clicks
+    notifyClick: () => ipcRenderer.sendToHost('clicked')
+});
 
 document.addEventListener("click", function () {
 	ipcRenderer.sendTo('host', "clicked");
@@ -2566,13 +2678,15 @@ recognizer.onresult = function (event) {
 
 ### js/components/menu.js
 ```js
-(function($) {
+(function ($) {
     const remote = require('@electron/remote');
+    const { ipcRenderer } = require('electron');
     const settings = require('electron-settings');
-    $.fn.menu = function(params) {
+
+    $.fn.menu = function (params) {
         var settings = $.extend({
-                tab: null
-            }, params),
+            tab: null
+        }, params),
             t = this
 
         t.toggled = false
@@ -2580,18 +2694,17 @@ recognizer.onresult = function (event) {
             opacity: 0,
             display: 'none'
         })
+
         t.menuItems = $('<ul class="menu-items" style="z-index: 9999;background-color: #fff;">').appendTo($(t))
         t.newWindow = $('<li class="menu-item ripple">').appendTo(t.menuItems)
         t.private = $('<li class="menu-item ripple">').appendTo(t.menuItems)
         $('<li class="menu-spec">').appendTo(t.menuItems)
-        
-        // Only initialized on Windows
-        if (remote.process.platform == 'win32') {
-            t.fullscreen = $('<li class="menu-item ripple">').appendTo(t.menuItems)
-            t.fullscreen.append('<i class="material-icons">fullscreen</i>')
-            t.fullscreen.append('<p class="menu-text">Fullscreen</p>')
-            $('<li class="menu-spec">').appendTo(t.menuItems)
-        }
+
+        // [FIX] Initialize Fullscreen button for all platforms (previously only win32)
+        t.fullscreen = $('<li class="menu-item ripple">').appendTo(t.menuItems)
+        t.fullscreen.append('<i class="material-icons">fullscreen</i>')
+        t.fullscreen.append('<p class="menu-text">Fullscreen</p>')
+        $('<li class="menu-spec">').appendTo(t.menuItems)
 
         t.history = $('<li class="menu-item ripple">').appendTo(t.menuItems)
         t.bookmarks = $('<li class="menu-item ripple">').appendTo(t.menuItems)
@@ -2605,35 +2718,24 @@ recognizer.onresult = function (event) {
         t.devTools = $('<li class="menu-item ripple">').appendTo(t.menuItems)
         t.info = $('<li class="menu-item ripple">').appendTo(t.menuItems)
 
-        t.settings.append('<i class="material-icons">settings</i>')
-        t.settings.append('<p class="menu-text">Settings</p>')
+        // Append content
+        t.settings.append('<i class="material-icons">settings</i><p class="menu-text">Settings</p>')
+        t.history.append('<i class="material-icons">history</i><p class="menu-text">History</p>')
+        t.bookmarks.append('<i class="material-icons">collections_bookmark</i><p class="menu-text">Bookmarks</p>')
+        t.downloads.append('<i class="material-icons">file_download</i><p class="menu-text">Downloads</p>')
+        t.newWindow.append('<i class="material-icons">desktop_windows</i><p class="menu-text">New window</p>')
+        t.devTools.append('<i class="material-icons">code</i><p class="menu-text">Developer Tools</p>')
+        t.info.append('<i class="material-icons">info</i><p class="menu-text">About KT Browser</p>')
 
-        t.history.append('<i class="material-icons">history</i>')
-        t.history.append('<p class="menu-text">History</p>')
-
-        t.bookmarks.append('<i class="material-icons">collections_bookmark</i>')
-        t.bookmarks.append('<p class="menu-text">Bookmarks</p>')
-
-        t.downloads.append('<i class="material-icons">file_download</i>')
-        t.downloads.append('<p class="menu-text">Downloads</p>')
-
-        t.newWindow.append('<i class="material-icons">desktop_windows</i>')
-        t.newWindow.append('<p class="menu-text">New window</p>')
-
-        t.devTools.append('<i class="material-icons">code</i>')
-        t.devTools.append('<p class="menu-text">Developer Tools</p>')
-
-        t.info.append('<i class="material-icons">info</i>')
-        t.info.append('<p class="menu-text">About KT Browser</p>')
-
-        $(t).find('.menu-item').mousedown(function(e) {
+        $(t).find('.menu-item').mousedown(function (e) {
             makeRippleMenuItem(this, e);
         })
 
-        $(window).on('click', function() {
+        $(window).on('click', function () {
             t.hide()
         })
-        t.history.click(function(e) {
+
+        t.history.click(function (e) {
             var tab = new Tab(),
                 instance = $('#instances').browser({
                     tab: tab,
@@ -2642,254 +2744,120 @@ recognizer.onresult = function (event) {
             addTab(instance, tab);
         });
 
-        t.newWindow.click(function(e) {
-            const BrowserWindow = remote.BrowserWindow;
-
-            var mainWindow = new BrowserWindow({
-                title: 'Settings',
-                frame: false,
-                width: 600,
-                height: 750,
-                show: false,
-                // ADD THIS BLOCK TO ALL POPUP WINDOWS:
-                webPreferences: {
-                    nodeIntegration: true,
-                    contextIsolation: false,
-                    enableRemoteModule: true // Required since you use remote inside settings.html
-                }
-            })
-            mainWindow.loadURL(`file://${__dirname}/index.html`)
-
+        t.newWindow.click(function (e) {
+            ipcRenderer.send('open-window', 'new-window');
         });
-        t.private.click(function(e) {
+
+        t.private.click(function (e) {
             if (settings.tab.instance.webview.isPrivacy) {
-                Toast_Material({
-                    content: "Incognito mode is now off for this tab",
-                    updown: "bottom",
-                    position: "center",
-                    align: "center"
-                });
+                Toast_Material({ content: "Incognito mode is now off", updown: "bottom", position: "center", align: "center" });
                 settings.tab.instance.webview.isPrivacy = false;
             } else {
-                Toast_Material({
-                    content: "Incognito mode is now on for this tab, your browsing trace will be wiped when this tab is closed",
-                    updown: "bottom",
-                    position: "center",
-                    align: "center"
-                });
+                Toast_Material({ content: "Incognito mode is now on", updown: "bottom", position: "center", align: "center" });
                 settings.tab.instance.webview.isPrivacy = true;
             }
             settings.tab.instance.webview.updateURLBarIcon()
         });
-        
-        // FIX: Check if t.fullscreen exists before attaching event listener
+
+        // [FIX] Check existence of t.fullscreen to prevent crash on click logic execution
         if (t.fullscreen) {
-            t.fullscreen.click(function(e) {
-                // executeJavaScript returns a Promise. 
-                // We pass 'true' for userGesture, though modern Electron often ignores it.
-                settings.tab.instance.webview.webview.executeJavaScript('isfullscreen()', true)
-                .then(result => {
-                    if (result == true) {
-                        // No callback needed for setters if we don't care about the result
-                        settings.tab.instance.webview.webview.executeJavaScript('setfullscreen(false)');
-                    } else {
-                        settings.tab.instance.webview.webview.executeJavaScript('setfullscreen(true)');
-                    }
-                }).catch(err => console.log("Fullscreen toggle error:", err));
+            t.fullscreen.click(function (e) {
+                const win = remote.getCurrentWindow();
+                win.setFullScreen(!win.isFullScreen());
             });
         }
 
-        t.nightmode.click(function(e) {
-            settings.tab.instance.webview.webview.executeJavaScript('isNightMode()', true)
-            .then(result => {
-                if (result == true) {
-                    settings.tab.instance.webview.webview.executeJavaScript('setNightMode(false)');
-                    settings.tab.instance.webview.webview.reload();
-                } else {
-                    settings.tab.instance.webview.webview.executeJavaScript('setNightMode(true)');
-                    settings.tab.instance.webview.webview.executeJavaScript('NightMode()');
-                }
-            }).catch(err => console.log("Night mode toggle error:", err));
+        t.nightmode.click(function (e) {
+            const webview = settings.tab.instance.webview.webview;
+
+            // Check status via ContextBridge (using executeJavaScript because webview tag is isolated)
+            webview.executeJavaScript('window.ktBrowserAPI.isNightMode()')
+                .then(isNight => {
+                    if (isNight) {
+                        webview.executeJavaScript('window.ktBrowserAPI.setNightMode(false)');
+                        webview.reload();
+                    } else {
+                        webview.executeJavaScript('window.ktBrowserAPI.setNightMode(true)');
+                        webview.executeJavaScript(`
+                        var css = "html { filter: invert(100%) hue-rotate(180deg); } img, video { filter: invert(100%) hue-rotate(180deg); }";
+                        var style = document.createElement("style");
+                        style.id = "night-mode-style";
+                        style.innerText = css;
+                        document.head.appendChild(style);
+                    `);
+                    }
+                }).catch(err => console.log("Night mode toggle error:", err));
         });
 
-        t.info.click(function(e) {
-            const BrowserWindow = remote.BrowserWindow;
-
-            var mainWindow = new BrowserWindow({
-                title: 'KT Browser',
-                frame: false,
-                width: 600,
-                height: 750,
-                show: false,
-                // ADD THIS BLOCK TO ALL POPUP WINDOWS:
-                webPreferences: {
-                    nodeIntegration: true,
-                    contextIsolation: false,
-                    enableRemoteModule: true // Required since you use remote inside settings.html
-                }
-            })
-            mainWindow.loadURL(`file://${__dirname}/about.html`)
+        t.info.click(function (e) {
+            ipcRenderer.send('open-window', 'about');
         });
-        t.bookmarks.click(function(e) {
-            Toast_Material({
-                content: "Not yet complete",
-                updown: "bottom",
-                position: "center",
-                align: "center"
-            });
+
+        t.bookmarks.click(function (e) {
+            ipcRenderer.send('open-window', 'bookmarks');
         });
-        t.downloads.click(function(e) {
-            const BrowserWindow = remote.BrowserWindow;
 
-            var mainWindow = new BrowserWindow({
-                title: 'Downloads',
-                frame: false,
-                width: 600,
-                height: 750,
-                show: false,
-                // ADD THIS BLOCK TO ALL POPUP WINDOWS:
-                webPreferences: {
-                    nodeIntegration: true,
-                    contextIsolation: false,
-                    enableRemoteModule: true // Required since you use remote inside settings.html
-                }
-            })
-            mainWindow.once('ready-to-show', () => {
-                mainWindow.show();
-            });
-            mainWindow.on('closed', () => {
-                mainWindow = null;
-            });
-            mainWindow.loadURL(`file://${__dirname}/downloads.html`)
-
+        t.downloads.click(function (e) {
+            ipcRenderer.send('open-window', 'downloads');
         });
-        t.settings.click(function(e) {
-            const BrowserWindow = remote.BrowserWindow;
 
-            var mainWindow = new BrowserWindow({
-                title: 'Settings',
-                frame: false,
-                width: 600,
-                height: 750,
-                show: false,
-                // ADD THIS BLOCK TO ALL POPUP WINDOWS:
-                webPreferences: {
-                    nodeIntegration: true,
-                    contextIsolation: false,
-                    enableRemoteModule: true // Required since you use remote inside settings.html
-                }
-            })
-
-            mainWindow.once('ready-to-show', () => {
-                mainWindow.show()
-            })
-
-            mainWindow.on('closed', () => {
-                mainWindow = null
-            })
-
-            mainWindow.loadURL(`file://${__dirname}/settings.html`)
+        t.settings.click(function (e) {
+            ipcRenderer.send('open-window', 'settings');
         });
-        t.devTools.click(function(e) {
-            settings.tab.instance.webview.webview.openDevTools({
-                mode: 'right'
-            });
+
+        t.devTools.click(function (e) {
+            settings.tab.instance.webview.webview.openDevTools({ mode: 'right' });
         });
-        t.vpn.click(function(e) {
-            // Toggle the value
-            var newState = !getVPN(); 
-            setVPN(newState);
-            
-            // Apply the proxy change immediately
-            if (typeof window.updateProxySettings === 'function') {
-                window.updateProxySettings();
+        t.vpn.click(function (e) {
+            if (typeof window.getVPN !== 'function' || typeof window.setVPN !== 'function') {
+                return;
             }
+            var newState = !window.getVPN();
+            window.setVPN(newState);
+
+            ipcRenderer.send('update-proxy-settings');
 
             if (newState) {
-                Toast_Material({
-                    content: "VPN is now enabled. Current location is " + getVPNLocation(),
-                    updown: "bottom",
-                    position: "center",
-                    align: "center"
-                });
+                var loc = window.getVPNLocation ? window.getVPNLocation() : "Unknown";
+                Toast_Material({ content: "VPN Enabled (" + loc + ")", updown: "bottom", position: "center", align: "center" });
             } else {
-                Toast_Material({
-                    content: "VPN is now disabled",
-                    updown: "bottom",
-                    position: "center",
-                    align: "center"
-                });
+                Toast_Material({ content: "VPN Disabled", updown: "bottom", position: "center", align: "center" });
             }
         });
 
-        t.show = function() {
-            t.private.html('')
-            t.private.append('<i class="material-icons">vpn_lock</i>')
-            if (!settings.tab.instance.webview.isPrivacy) {
-                t.private.append('<p class="menu-text">Private mode</p>')
-            } else {
-                t.private.append('<p class="menu-text">Exit private mode</p>')
-            }
-            t.vpn.html('')
-            t.vpn.append('<i class="material-icons">vpn_key</i>')
-            if (getVPN()) {
-                t.vpn.append('<p class="menu-text">Turn off VPN</p>')
-            } else {
-                t.vpn.append('<p class="menu-text">VPN</p>')
-            }
-            if (getNightMode()) {
-                t.nightmode.html('')
-                t.nightmode.append('<i class="material-icons">wb_sunny</i>')
-                t.nightmode.append('<p class="menu-text">Exit night mode</p>')
+        t.show = function () {
+            t.private.html('<i class="material-icons">vpn_lock</i>');
+            t.private.append(settings.tab.instance.webview.isPrivacy ?
+                '<p class="menu-text">Exit private mode</p>' :
+                '<p class="menu-text">Private mode</p>');
 
+            t.vpn.html('<i class="material-icons">vpn_key</i>');
+            t.vpn.append(window.getVPN() ?
+                '<p class="menu-text">Turn off VPN</p>' :
+                '<p class="menu-text">VPN</p>');
+
+            if (window.getNightMode()) {
+                t.nightmode.html('<i class="material-icons">wb_sunny</i><p class="menu-text">Exit night mode</p>');
                 $(".menu-item").css("background-color", "#212121");
-                $('.menu-item').hover(function() {
-                    $(this).css("background-color", "#424242");
-                }, function() {
-                    $(this).css("background-color", "#212121");
-                });
-                $(".menu-text").css("color", "#fff");
-                $(".menu-item>i").css("color", "#fff");
+                $('.menu-item').hover(function () { $(this).css("background-color", "#424242"); }, function () { $(this).css("background-color", "#212121"); });
+                $(".menu-text, .menu-item>i").css("color", "#fff");
                 $(".ripple").attr("data-ripple-color", "#616161");
             } else {
-                t.nightmode.html('')
-                t.nightmode.append('<i class="material-icons">brightness_4</i>')
-                t.nightmode.append('<p class="menu-text">Night mode</p>')
-
+                t.nightmode.html('<i class="material-icons">brightness_4</i><p class="menu-text">Night mode</p>');
                 $(".menu-item").css("background-color", "#fff");
-                $('.menu-item').hover(function() {
-                    $(this).css("background-color", "#E0E0E0");
-                }, function() {
-                    $(this).css("background-color", "#fff");
-                });
-                $(".menu-text").css("color", "");
-                $(".menu-item>i").css("color", "");
+                $('.menu-item').hover(function () { $(this).css("background-color", "#E0E0E0"); }, function () { $(this).css("background-color", "#fff"); });
+                $(".menu-text, .menu-item>i").css("color", "");
                 $(".ripple").attr("data-ripple-color", "#444");
             }
-            //menu fade in animation
+
             $(t).css('display', 'block');
-            $(t).css('opacity', 0).animate({
-                opacity: 1
-            }, 200, function() {
-                t.toggled = true
-            }).css('top', -20).animate({
-                top: 8
-            }, {
-                queue: false,
-                duration: 100
-            });
+            $(t).css('opacity', 0).animate({ opacity: 1 }, 200, function () { t.toggled = true }).css('top', -20).animate({ top: 8 }, { queue: false, duration: 100 });
         }
 
-        t.hide = function() {
-            $(t).css('opacity', 1).animate({
-                opacity: 0
-            }, 60).css('top', 8).animate({
-                top: -20
-            }, {
+        t.hide = function () {
+            $(t).css('opacity', 1).animate({ opacity: 0 }, 60).css('top', 8).animate({ top: -20 }, {
                 queue: false,
-                complete: function() {
-                    $(t).css('display', 'none');
-                },
+                complete: function () { $(t).css('display', 'none'); },
                 duration: 100
             });
             t.toggled = false;
@@ -2924,7 +2892,7 @@ recognizer.onresult = function (event) {
             t = this,
             lastUrl = ''
 
-        var pref = 'contextIsolation=no, nodeIntegration=yes';
+        var pref = 'contextIsolation=yes, nodeIntegration=no, sandbox=true';
         var settingmng = require('electron-settings')
 
         if (!settingmng.getSync("settings.allowScript")) {
@@ -2937,6 +2905,45 @@ recognizer.onresult = function (event) {
         t.isPrivacy = false
         t.webview = $('<webview class="webview" preload="js/extensions/preload.js" webpreferences="' + pref + '" useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 KT-Browser/8.0.0-alpha" autosize="on" src="about:blank" plugins>').appendTo($(this))[0]
         t.storage = new Storage()
+        // [FIXED] Status / Click handling from Preload
+        t.webview.addEventListener('ipc-message', function (e) {
+            if (e.channel == 'clicked') {
+                if (settings.tab.instance.bar) settings.tab.instance.bar.suggestions.css('display', 'none')
+                if (settings.tab.instance.menu) settings.tab.instance.menu.hide()
+            }
+            if (e.channel == 'status') {
+                var statusText = e.args[0];
+                var statusEl = settings.tab.instance.status;
+                if (!statusText) {
+                    statusEl.css("display", "none");
+                } else {
+                    if (statusText.length > 70) {
+                        statusEl.html(statusText.substring(0, 70) + "...");
+                    } else {
+                        statusEl.html(statusText);
+                    }
+                    statusEl.css("display", "inline");
+                }
+            }
+        });
+
+        // [ADDED] Handle New Window properly
+        t.webview.addEventListener('new-window', (e) => {
+            const protocol = require('url').parse(e.url).protocol
+            if (protocol === 'http:' || protocol === 'https:' || protocol === 'kt-browser:') {
+                // If standard link, open in new tab
+                var tab = new Tab(),
+                    instance = $('#instances').browser({
+                        tab: tab,
+                        url: e.url
+                    })
+                addTab(instance, tab);
+            } else {
+                // External links (mailto, etc)
+                require('electron').shell.openExternal(e.url);
+            }
+        });
+
         t.string = "Siema"
 
         // Initialize context menu
@@ -2956,10 +2963,14 @@ recognizer.onresult = function (event) {
         }
 
         t.fitToParent = function () {
+            var headerHeight = 79; // Original offset
+            var bookmarkHeight = 28; // New bar height
+            var totalTopMargin = 48 + bookmarkHeight; // 48 is original marginTop
+
             $(t.webview).css({
                 width: window.innerWidth,
-                height: window.innerHeight - 79,
-                marginTop: '48px'
+                height: window.innerHeight - (headerHeight + bookmarkHeight), // Subtract extra height
+                marginTop: totalTopMargin + 'px' // Push down
             })
 
             setBarDisplay('block');
@@ -3055,7 +3066,7 @@ recognizer.onresult = function (event) {
                 settings.tab.instance.bar.searchIcon.html('search')
             }
             if (currentUrl.startsWith("file://")) {
-                settings.tab.instance.bar.searchIcon.html('storage')
+                settings.tab.instance.bar.searchIcon.html('folder')
                 settings.tab.instance.bar.rdBtn.hide()
                 settings.tab.instance.bar.searchInput.css("width", "calc(100% - 88px)")
             }
@@ -3151,24 +3162,24 @@ recognizer.onresult = function (event) {
                 }
                 lastUrl = t.webview.getURL()
             }
-            if (!t.webview.getURL().startsWith("kt-browser://newtab") && t.webview.getURL() != "about:blank" && !t.webview.getURL().includes(`reader/index.html?url=`)) {
+
+            if (!t.webview.getURL().startsWith("kt-browser://newtab")) {
                 if (settings.tab.instance.bar) settings.tab.instance.bar.searchInput.val(t.webview.getURL());
             }
 
+
             if (settings.tab.instance.bar) {
-                if (t.webview.canGoBack()) {
-                    settings.tab.instance.bar.backBtn.enabled = true
-                } else {
-                    settings.tab.instance.bar.backBtn.enabled = false
+                // Check if element exists before setting property
+                if (settings.tab.instance.bar.backBtn) {
+                    // Visual styling for disabled state (css class handling usually better)
+                    settings.tab.instance.bar.backBtn.css('opacity', t.webview.canGoBack() ? 1 : 0.3);
                 }
-                if (t.webview.canGoForward()) {
-                    settings.tab.instance.bar.forwardBtn.enabled = true
-                } else {
-                    settings.tab.instance.bar.forwardBtn.enabled = false
+                if (settings.tab.instance.bar.forwardBtn) {
+                    settings.tab.instance.bar.forwardBtn.css('opacity', t.webview.canGoForward() ? 1 : 0.3);
                 }
             }
 
-            t.updateURLBarIcon()
+            t.updateURLBarIcon();
 
             if (isMainFrame) {
                 t.webview.executeJavaScript('stylishMenu()', false);
@@ -3283,7 +3294,7 @@ recognizer.onresult = function (event) {
         t.webview.addEventListener('page-favicon-updated', function (e) {
             if (e.favicons && e.favicons.length > 0) {
                 var iconUrl = e.favicons[0];
-                
+
                 // 1. Update the UI Icon
                 settings.tab.Favicon.html("<div class='favicon' style='background-image: url(\"" + iconUrl + "\");'></div>");
                 settings.tab.Favicon.css('opacity', "1");
@@ -3291,10 +3302,10 @@ recognizer.onresult = function (event) {
 
                 // 2. Calculate Color from Favicon
                 if (require('electron-settings').getSync("settings.colorByPage")) {
-                    getDominantColor(iconUrl, function(hexColor) {
+                    getDominantColor(iconUrl, function (hexColor) {
                         // Store this color in the tab object for later use
                         settings.tab.FaviconColor = hexColor;
-                        
+
                         // Trigger the main color update logic (which will decide Meta vs Favicon)
                         // We'll define 'updateTabColor' in browser.js next
                         if (typeof t.updateTabColorReference === 'function') {
@@ -3357,7 +3368,28 @@ recognizer.onresult = function (event) {
             favIcon = $('<i2 class="material-icons" data-tooltip-text="Bookmark this page" data-tooltip-position="bottom">favorite_border</i2>').appendTo(this.searchBox),
             micIcon = $('<i3 id="micicon" class="material-icons" data-tooltip-text="Search by voice" data-tooltip-position="bottom" style="font-size: 18px;">mic_none</i3>').appendTo(this.micBtn),
             extIcon = $('<i class="material-icons btn-icon" style="font-size: 22px;">more_vert</i>').appendTo(this.extBtn)
+        favIcon.click(function() {
+            var currentUrl = webview.getURL();
+            var currentTitle = webview.getTitle();
 
+            // Visual feedback: Change icon to filled star
+            $(this).text("favorite"); 
+
+            // Save and Refresh
+            // We access the storage instance from the active tab's webview wrapper
+            // t.webview is available in this scope from bar.js initialization
+            if (t.webview && t.webview.storage) {
+                t.webview.storage.saveBookmark(currentTitle, currentUrl, function() {
+                    console.log("Bookmark saved!");
+                    
+                    // Trigger the UI update on the browser instance
+                    // settings.tab.instance refers to the Browser class instance
+                    if (settings.tab.instance && typeof settings.tab.instance.updateBookmarks === 'function') {
+                        settings.tab.instance.updateBookmarks();
+                    }
+                });
+            }
+        });
         this.searchIcon = $('<i class="material-icons">search</i>').appendTo(this.searchBox)
         $(".rdIcon").tooltip();
         $(".micIcon").tooltip();
@@ -3439,7 +3471,7 @@ recognizer.onresult = function (event) {
 
 ### js/components/storage.js
 ```js
-(function() {
+(function () {
     const fs = require('fs');
     const remote = require('@electron/remote');
     const { app } = remote;
@@ -3474,7 +3506,7 @@ recognizer.onresult = function (event) {
                 fs.readFile(historyPath, function (err, data) {
                     if (err) {
                         // Handle error or init file
-                        return; 
+                        return;
                     }
                     var json = data.toString()
                     //replace weird characters in utf-8
@@ -3485,13 +3517,13 @@ recognizer.onresult = function (event) {
                     } catch (e) {
                         obj = { history: [] };
                     }
-                    
+
                     if (!url.startsWith("kt-browser://") && !url.startsWith("about:blank")) {
                         var date = new Date()
                         var current_hour = date.getHours()
                         var current_minute = date.getMinutes()
                         var time = `${current_hour}:${current_minute}`
-                        
+
                         if (!obj['history']) obj['history'] = [];
 
                         if (obj['history'].length === 0) {
@@ -3523,52 +3555,50 @@ recognizer.onresult = function (event) {
             }
         }
 
-        saveBookmark(title, url) {
+        saveBookmark(title, url, callback) {
             if (title != null && url != null) {
                 var array;
                 fs.readFile(bookmarkPath, function (err, data) {
-                     if (err) {
-                        // Handle error
-                        return; 
-                    }
-                    var json = data.toString()
-                    json = json.replace("\ufeff", "")
+                    if (err) { return; }
+
+                    var json = data.toString();
+                    json = json.replace("\ufeff", "");
                     var obj;
                     try {
-                         obj = JSON.parse(json)
-                    } catch(e) {
+                        obj = JSON.parse(json);
+                    } catch (e) {
                         obj = { bookmark: [] };
                     }
 
                     if (!url.startsWith("kt-browser://") && !url.startsWith("about:blank")) {
                         if (!obj['bookmark']) obj['bookmark'] = [];
-                        
-                        if (obj['bookmark'].length === 0) {
-                            obj['bookmark'].push({
-                                "link": url,
-                                "title": title,
-                                "id": 0
-                            });
-                        } else {
-                            obj['bookmark'].push({
-                                "link": url,
-                                "title": title,
-                                "id": obj['bookmark'][obj['bookmark'].length - 1].id + 1
-                            });
-                        }
-                        var jsonStr = JSON.stringify(obj)
-                        json = jsonStr
-                        fs.writeFile(bookmarkPath, json, function (err) {
-                            if (err) {
-                                return true
+
+                        // ... (keep existing logic for creating ID) ...
+                        var newId = obj['bookmark'].length === 0 ? 0 : obj['bookmark'][obj['bookmark'].length - 1].id + 1;
+
+                        obj['bookmark'].push({
+                            "link": url,
+                            "title": title,
+                            "id": newId
+                        });
+
+                        var jsonStr = JSON.stringify(obj);
+
+                        // Write file and trigger callback
+                        fs.writeFile(bookmarkPath, jsonStr, function (err) {
+                            if (err) return console.log(err);
+
+                            // THIS IS THE NEW PART:
+                            if (callback && typeof callback === 'function') {
+                                callback();
                             }
-                        })
+                        });
                     }
-                })
+                });
             }
         }
     }
-    
+
     // Expose to window
     window.Storage = Storage;
 })();
@@ -4332,21 +4362,23 @@ class Colors {
     const settings = require('electron-settings');
     const remote = require('@electron/remote');
     const { globalShortcut } = remote;
+    var bookmarkPath = app.getPath('userData') + '/User Data/Bookmarks';
     $.fn.browser = function (params) {
         var settings = $.extend({
-                url: "",
-                tab: null
-            }, params),
+            url: "",
+            tab: null
+        }, params),
             browser = $('<div class="tabWindow">').appendTo($(this)),
             status = $('<div class="status" unselectable="on" style="cursor: default; -webkit-user-select: none; user-select: none; -o-user-select: none;">').appendTo(browser),
             bar = $('<div class="bar">').appendTo(browser),
+            bookmarksBar = $('<div class="bookmarks-bar">').appendTo(browser),
             content = $('<div class="content">').appendTo(browser),
             t = this,
             menu = $('<div class="menu" style="z-index: 9999;">').appendTo(content)
         t.menu = menu.menu({
             tab: settings.tab
         })
-
+        this.updateBookmarks = t.updateBookmarks;
         checkFiles()
         settings.tab.tabWindow = browser
 
@@ -4360,18 +4392,49 @@ class Colors {
             t.bar = bar.bar({
                 tab: settings.tab
             })
+            t.updateBookmarks = function () {
+                bookmarksBar.empty();
+                // Read file directly here instead of calling a missing global function
+                var data = { bookmark: [] };
+                if (fs.existsSync(bookmarkPath)) {
+                    try {
+                        data = JSON.parse(fs.readFileSync(bookmarkPath));
+                    } catch (e) {
+                        data = { bookmark: [] };
+                    }
+                }
+                if (data && data.bookmark) {
+                    data.bookmark.forEach(function (item) {
+                        var bmItem = $('<div class="bookmark-item ripple">').appendTo(bookmarksBar);
+                        // Favicon
+                        var iconUrl = "http://www.google.com/s2/favicons?domain=" + item.link;
+                        $('<img src="' + iconUrl + '" class="bm-icon">').appendTo(bmItem);
+                        $('<span class="bm-title">').text(item.title).appendTo(bmItem);
+                        // Load URL on click
+                        bmItem.click(function () {
+                            t.webview.loadURL(item.link);
+                        });
+                        // Ripple effect
+                        bmItem.mousedown(function (e) {
+                            var relX = e.pageX - $(this).offset().left;
+                            var relY = e.pageY - $(this).offset().top;
+                            Ripple.makeRipple($(this), relX, relY, $(this).width(), $(this).height(), 300, 0);
+                        });
+                    });
+                }
+            };
             const updateTabColor = () => {
                 if (settings.tab.selected) {
                     // PASS settings.tab.FaviconColor as the fallback!
                     t.colors.getColor(settings.tab.FaviconColor, function (data) {
-                        
+
                         if (settings.tab.Color != data.background) {
                             settings.tab.Color = data.background;
                             settings.tab.Tab.css('background-color', data.background);
-                            
+
                             t.webview.webview.executeJavaScript('setTitleBarColor("' + shadeColor2(data.background, -0.2) + '")')
-                                .catch(() => {});
-                            
+                                .catch(() => { });
+
                             t.bar.css('background-color', data.background);
                             changeForeground(data.foreground, data.foreground == 'white' ? '#fff' : '#444');
                         }
@@ -4438,6 +4501,7 @@ class Colors {
                 t.bar.forwardBtn.attr('data-ripple-color', ripple).css('color', color)
                 t.bar.extBtn.attr('data-ripple-color', ripple).css('color', color)
             }
+            t.updateBookmarks();
         })
 
 
@@ -4452,93 +4516,73 @@ class Colors {
         });
         return this
     }
-
-
 }(jQuery))
 ```
 
 ### js/components/searchinput.js
 ```js
- (function ($) {
-     $.fn.searchInput = function (params) {
-         var settings = $.extend({
-                 tab: null
-             }, params)
-             , t = this
-             , webview = settings.tab.instance.webview.webview
+(function ($) {
+    function isValidURL(str) {
+        var pattern = new RegExp('^(https?:\\/\\/)?' + // protocol
+            '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|' + // domain name
+            '((\\d{1,3}\\.){3}\\d{1,3}))' + // OR ip (v4) address
+            '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*' + // port and path
+            '(\\?[;&a-z\\d%_.~+=-]*)?' + // query string
+            '(\\#[-a-z\\d_]*)?$', 'i'); // fragment locator
+        return !!pattern.test(str);
+    }
 
+    $.fn.searchInput = function (params) {
+        var settings = $.extend({
+            tab: null
+        }, params)
+            , t = this
+            , webview = settings.tab.instance.webview.webview
 
-         $(this)
-             .focusin(function () {
-                 $(this)
-                     .select();
-             });
-         $(this)
-             .keypress(function (e) {
-                 var suggestions = suggestions = settings.tab.instance.bar.suggestions
-                 //if enter key was pressed
+        $(this).focusin(function () {
+            $(this).select();
+        });
 
-                 if (e.which == 13) {
-                     suggestions.css('display', 'none')
-                     if (!$(t)
-                         .val()
-                         .startsWith("kt-browser://")) {
-                         if (isURL($(t)
-                                 .val())) {
-                             if ($(t)
-                                 .val()
-                                 .startsWith("http://") || $(t)
-                                 .val()
-                                 .startsWith("https://") || $(t)
-                                 .val()
-                                 .startsWith("file://")) {
-                                 webview.loadURL($(t)
-                                     .val());
-                             } else {
-                                 webview.loadURL("http://" + $(t)
-                                     .val());
-                             }
-                         } else {
-                             switch (getSearchEngine()) {
-                             case "1":
-                                 webview.loadURL("http://www.google.com/search?q=" + $(t)
-                                     .val());
-                                 break;
-                             case "2":
-                                 webview.loadURL("http://coccoc.com/search#query=" + $(t)
-                                     .val());
-                                 break;
-                             case "3":
-                                 webview.loadURL("https://duckduckgo.com/?q=" + $(t)
-                                     .val());
-                                 break;
-                             case "4":
-                                 webview.loadURL("https://www.bing.com/search?q=" + $(t)
-                                     .val());
-                                 break;
-                             case "5":
-                                 webview.loadURL("https://search.yahoo.com/search?p=" + $(t)
-                                     .val());
-                                 break;
-                             case "6":
-                                 webview.loadURL("https://www.yandex.com/search/?text=" + $(t)
-                                     .val());
-                                 break;
-                             }
+        $(this).keypress(function (e) {
+            var val = $(t).val().trim();
+            var suggestions = settings.tab.instance.bar.suggestions;
 
-                         }
-                     } else {
-                         webview.loadURL($(t)
-                             .val());
-                     }
+            if (e.which == 13) { // Enter key
+                suggestions.css('display', 'none');
 
-                     return false;
-                 }
-             });
-         return this
-     }
- }(jQuery))
+                // Internal Pages
+                if (val.startsWith("kt-browser://") || val.startsWith("file://")) {
+                    webview.loadURL(val);
+                    return false;
+                }
 
+                // Check if it looks like a URL or an IP
+                if (isValidURL(val) || val.includes('localhost')) {
+                    if (val.startsWith("http://") || val.startsWith("https://")) {
+                        webview.loadURL(val);
+                    } else {
+                        webview.loadURL("http://" + val);
+                    }
+                } else {
+                    // Search
+                    var engine = getSearchEngine(); // Global function from preload/main
+                    var searchUrl = "";
+                    switch (engine) {
+                        case "2": searchUrl = "http://coccoc.com/search#query="; break;
+                        case "3": searchUrl = "https://duckduckgo.com/?q="; break;
+                        case "4": searchUrl = "https://www.bing.com/search?q="; break;
+                        case "5": searchUrl = "https://search.yahoo.com/search?p="; break;
+                        case "6": searchUrl = "https://www.yandex.com/search/?text="; break;
+                        default: searchUrl = "http://www.google.com/search?q="; break;
+                    }
+                    webview.loadURL(searchUrl + encodeURIComponent(val));
+                }
+                return false;
+            }
+        });
+        return this;
+    }
+}(jQuery));
 ```
 
 ### js/applets/history.js

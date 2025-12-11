@@ -1,20 +1,19 @@
 const electron = require('electron');
 const remote = require('@electron/remote');
 
-// CRITICAL FIX: Polyfill electron.remote globally for all subsequent requires
-// This fixes 'electron-connect' and 'electron-settings' errors
 if (!electron.remote) {
     electron.remote = remote;
 }
 
-const { ipcRenderer } = electron;
+const { contextBridge, ipcRenderer } = electron;
 const { app } = remote;
 const settings = require('electron-settings');
 const fs = require('fs');
 
 var window = remote.getCurrentWindow();
-var historyPath = app.getPath('userData') + '/User Data/History';
 var userdataPath = app.getPath('userData') + '/User Data';
+var historyPath = userdataPath + '/History';
+var bookmarkPath = userdataPath + '/Bookmarks';
 
 global.getHistoryData = function () {
     if (!fs.existsSync(historyPath)) {
@@ -120,6 +119,45 @@ global.MacRender = function () {
 		}
 	}
 }
+global.getBookmarksData = function () {
+    // Ensure the path matches where storage.js saves it
+    if (!fs.existsSync(bookmarkPath)) {
+        return { bookmark: [] };
+    }
+    try {
+        return JSON.parse(fs.readFileSync(bookmarkPath));
+    } catch (e) {
+        return { bookmark: [] };
+    }
+};
+
+contextBridge.exposeInMainWorld('ktBrowserAPI', {
+    // Check if full screen
+    isFullScreen: () => ipcRenderer.sendSync('get-fullscreen'),
+    
+    // Request full screen toggle
+    setFullScreen: (flag) => ipcRenderer.send('set-fullscreen', flag),
+    
+    // Check night mode preference
+    isNightMode: () => ipcRenderer.sendSync('get-night-mode'),
+    
+    // Helper for reader view to get content
+    getReaderScore: () => {
+        var paragraphs = document.querySelectorAll('p');
+        var tl = 0;
+        if (!paragraphs) return 0;
+        for (var i = 0; i < paragraphs.length; i++) {
+            tl += Math.max(paragraphs[i].textContent.length - 100, -30);
+        }
+        return tl;
+    },
+
+    // Notify host about status (link hover)
+    setStatus: (status) => ipcRenderer.sendToHost('status', status),
+    
+    // Notify host about clicks
+    notifyClick: () => ipcRenderer.sendToHost('clicked')
+});
 
 document.addEventListener("click", function () {
 	ipcRenderer.sendTo('host', "clicked");

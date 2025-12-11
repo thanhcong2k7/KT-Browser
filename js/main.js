@@ -227,20 +227,21 @@
         calcSizes(false, false);
     };
 
-    $('.windowbutton-close').click(function () {
-        remote.getCurrentWindow().close();
+    $(function () {
+        $('.windowbutton-close').click(function () {
+            remote.getCurrentWindow().close();
+        });
+        $('.windowbutton-maximize').click(function () {
+            if (remote.getCurrentWindow().isMaximized()) {
+                remote.getCurrentWindow().unmaximize();
+            } else {
+                remote.getCurrentWindow().maximize();
+            }
+        });
+        $('.windowbutton-minimize').click(function () {
+            remote.getCurrentWindow().minimize();
+        });
     });
-    $('.windowbutton-maximize').click(function () {
-        if (remote.getCurrentWindow().isMaximized()) {
-            remote.getCurrentWindow().unmaximize();
-        } else {
-            remote.getCurrentWindow().maximize();
-        }
-    });
-    $('.windowbutton-minimize').click(function () {
-        remote.getCurrentWindow().minimize();
-    });
-
     window.showApp = function (url) {
         const BrowserWindow = remote.BrowserWindow;
 
@@ -362,15 +363,8 @@
     }
 
     window.updateProxySettings = function () {
-        var session = remote.getCurrentWindow().webContents.session;
-        var useVPN = settings.getSync('static.VPN');
-        var proxyScript = settings.getSync("settings.nvProxy");
-
-        session.setProxy({
-            pacScript: useVPN ? proxyScript : ""
-        }).then(() => {
-            console.log("Proxy settings updated. VPN: " + useVPN);
-        }).catch(err => console.error("Failed to set proxy", err));
+        ipcRenderer.send('update-proxy-settings');
+        console.log("Requested Proxy Update. VPN: " + settings.getSync('static.VPN'));
     };
 
     window.getSettings = function (setting, defaultvalue) {

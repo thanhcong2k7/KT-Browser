@@ -1,22 +1,25 @@
 (function ($) {
     const settings = require('electron-settings');
     const remote = require('@electron/remote');
-    const { globalShortcut } = remote;
+    const { globalShortcut, app } = remote;
+    const fs = require('fs');
+    var bookmarkPath = app.getPath('userData') + '/User Data/Bookmarks';
     $.fn.browser = function (params) {
         var settings = $.extend({
-                url: "",
-                tab: null
-            }, params),
+            url: "",
+            tab: null
+        }, params),
             browser = $('<div class="tabWindow">').appendTo($(this)),
             status = $('<div class="status" unselectable="on" style="cursor: default; -webkit-user-select: none; user-select: none; -o-user-select: none;">').appendTo(browser),
             bar = $('<div class="bar">').appendTo(browser),
+            bookmarksBar = $('<div class="bookmarks-bar">').appendTo(browser),
             content = $('<div class="content">').appendTo(browser),
             t = this,
             menu = $('<div class="menu" style="z-index: 9999;">').appendTo(content)
         t.menu = menu.menu({
             tab: settings.tab
         })
-
+        this.updateBookmarks = t.updateBookmarks;
         checkFiles()
         settings.tab.tabWindow = browser
 
@@ -30,18 +33,49 @@
             t.bar = bar.bar({
                 tab: settings.tab
             })
+            t.updateBookmarks = function () {
+                bookmarksBar.empty();
+                // Read file directly here instead of calling a missing global function
+                var data = { bookmark: [] };
+                if (fs.existsSync(bookmarkPath)) {
+                    try {
+                        data = JSON.parse(fs.readFileSync(bookmarkPath));
+                    } catch (e) {
+                        data = { bookmark: [] };
+                    }
+                }
+                if (data && data.bookmark) {
+                    data.bookmark.forEach(function (item) {
+                        var bmItem = $('<div class="bookmark-item ripple">').appendTo(bookmarksBar);
+                        // Favicon
+                        var iconUrl = "http://www.google.com/s2/favicons?domain=" + item.link;
+                        $('<img src="' + iconUrl + '" class="bm-icon">').appendTo(bmItem);
+                        $('<span class="bm-title">').text(item.title).appendTo(bmItem);
+                        // Load URL on click
+                        bmItem.click(function () {
+                            t.webview.loadURL(item.link);
+                        });
+                        // Ripple effect
+                        bmItem.mousedown(function (e) {
+                            var relX = e.pageX - $(this).offset().left;
+                            var relY = e.pageY - $(this).offset().top;
+                            Ripple.makeRipple($(this), relX, relY, $(this).width(), $(this).height(), 300, 0);
+                        });
+                    });
+                }
+            };
             const updateTabColor = () => {
                 if (settings.tab.selected) {
                     // PASS settings.tab.FaviconColor as the fallback!
                     t.colors.getColor(settings.tab.FaviconColor, function (data) {
-                        
+
                         if (settings.tab.Color != data.background) {
                             settings.tab.Color = data.background;
                             settings.tab.Tab.css('background-color', data.background);
-                            
+
                             t.webview.webview.executeJavaScript('setTitleBarColor("' + shadeColor2(data.background, -0.2) + '")')
-                                .catch(() => {});
-                            
+                                .catch(() => { });
+
                             t.bar.css('background-color', data.background);
                             changeForeground(data.foreground, data.foreground == 'white' ? '#fff' : '#444');
                         }
@@ -108,6 +142,7 @@
                 t.bar.forwardBtn.attr('data-ripple-color', ripple).css('color', color)
                 t.bar.extBtn.attr('data-ripple-color', ripple).css('color', color)
             }
+            t.updateBookmarks();
         })
 
 
@@ -122,6 +157,4 @@
         });
         return this
     }
-
-
 }(jQuery))

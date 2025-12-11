@@ -1,4 +1,4 @@
-(function() {
+(function () {
     const fs = require('fs');
     const remote = require('@electron/remote');
     const { app } = remote;
@@ -33,7 +33,7 @@
                 fs.readFile(historyPath, function (err, data) {
                     if (err) {
                         // Handle error or init file
-                        return; 
+                        return;
                     }
                     var json = data.toString()
                     //replace weird characters in utf-8
@@ -44,13 +44,13 @@
                     } catch (e) {
                         obj = { history: [] };
                     }
-                    
+
                     if (!url.startsWith("kt-browser://") && !url.startsWith("about:blank")) {
                         var date = new Date()
                         var current_hour = date.getHours()
                         var current_minute = date.getMinutes()
                         var time = `${current_hour}:${current_minute}`
-                        
+
                         if (!obj['history']) obj['history'] = [];
 
                         if (obj['history'].length === 0) {
@@ -82,52 +82,50 @@
             }
         }
 
-        saveBookmark(title, url) {
+        saveBookmark(title, url, callback) {
             if (title != null && url != null) {
                 var array;
                 fs.readFile(bookmarkPath, function (err, data) {
-                     if (err) {
-                        // Handle error
-                        return; 
-                    }
-                    var json = data.toString()
-                    json = json.replace("\ufeff", "")
+                    if (err) { return; }
+
+                    var json = data.toString();
+                    json = json.replace("\ufeff", "");
                     var obj;
                     try {
-                         obj = JSON.parse(json)
-                    } catch(e) {
+                        obj = JSON.parse(json);
+                    } catch (e) {
                         obj = { bookmark: [] };
                     }
 
                     if (!url.startsWith("kt-browser://") && !url.startsWith("about:blank")) {
                         if (!obj['bookmark']) obj['bookmark'] = [];
-                        
-                        if (obj['bookmark'].length === 0) {
-                            obj['bookmark'].push({
-                                "link": url,
-                                "title": title,
-                                "id": 0
-                            });
-                        } else {
-                            obj['bookmark'].push({
-                                "link": url,
-                                "title": title,
-                                "id": obj['bookmark'][obj['bookmark'].length - 1].id + 1
-                            });
-                        }
-                        var jsonStr = JSON.stringify(obj)
-                        json = jsonStr
-                        fs.writeFile(bookmarkPath, json, function (err) {
-                            if (err) {
-                                return true
+
+                        // ... (keep existing logic for creating ID) ...
+                        var newId = obj['bookmark'].length === 0 ? 0 : obj['bookmark'][obj['bookmark'].length - 1].id + 1;
+
+                        obj['bookmark'].push({
+                            "link": url,
+                            "title": title,
+                            "id": newId
+                        });
+
+                        var jsonStr = JSON.stringify(obj);
+
+                        // Write file and trigger callback
+                        fs.writeFile(bookmarkPath, jsonStr, function (err) {
+                            if (err) return console.log(err);
+
+                            // THIS IS THE NEW PART:
+                            if (callback && typeof callback === 'function') {
+                                callback();
                             }
-                        })
+                        });
                     }
-                })
+                });
             }
         }
     }
-    
+
     // Expose to window
     window.Storage = Storage;
 })();
